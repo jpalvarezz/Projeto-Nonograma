@@ -5,201 +5,468 @@ import java.util.List;
 
 public class Tabuleiro {
 
-    private int linhas;   //nao vamos fazer mais que 10x10 pelo jeito
+    private int linhas;
     private int colunas;
 
     public enum Estado {
-        INTOCADA, MARCADA, VAZIO  //definicao de casas, para fazer a matriz enumerador
+        INTOCADA,
+        MARCADA,
+        VAZIO
     }
 
-    private int erros = 0; //quantidade de erros atua do jogo
-    private String nome; //nome do tabuleiro
+    private int erros = 0;
+
+    private String nome;
     private int dificuldade;
     private int limErros;
-    private Estado[][] celulas; //matriz de enumerador de celulas (jogo atual)
-    private Estado[][] estadoCorreto; //gabarito
-    private int[][] pistasLinha;  //pistas (voce que vai calcular joao)
-    private int[][] pistasColuna; //pistas (voce que vai calcular joao)
 
-    //construtor
+    // Estado atual escolhido pelo jogador
+    private Estado[][] celulas;
+
+    // Pistas
+    private int[][] pistasLinha;
+    private int[][] pistasColuna;
+
+    // Cada Estado[][] representa uma possivel solução
+    private List<Estado[][]> possiveisGabaritos;
+
     public Tabuleiro(String nome, int linhas, int colunas) {
+
         this.nome = nome;
         this.linhas = linhas;
         this.colunas = colunas;
-        this.celulas = new Estado[linhas][colunas];
-        this.estadoCorreto = new Estado[linhas][colunas];
 
-        for (int l = 0; l < linhas; l++){
-            for (int c = 0; c < colunas; c++){
-                this.celulas[l][c] = Estado.INTOCADA;
-            }
+        this.celulas = new Estado[linhas][colunas];
+
+        for (int l = 0; l < linhas; l++) {
+            for (int c = 0; c < colunas; c++) celulas[l][c] = Estado.INTOCADA;
         }
 
+        possiveisGabaritos = new ArrayList<>();
     }
 
-    public void setDificuldade(int dificuldade){
+    // DIFICULDADE
+
+    public void setDificuldade(int dificuldade) {
+
         this.dificuldade = dificuldade;
 
-        switch(dificuldade){
+        switch (dificuldade) {
+
             case 1:
-                this.limErros = 999;
+                limErros = 999;
                 break;
+
             case 2:
-                this.limErros = 3;
+                limErros = 3;
                 break;
+
             case 3:
-                this.limErros = 2;
+                limErros = 2;
                 break;
-                default:
-                    this.limErros = 3;
+
+            default:
+                limErros = 3;
         }
     }
 
-    //gera um tabuleiro aleatorio, talvez mudar as chances de entrar marcado
     public void gerarTabuleiroAleatorio() {
-        for (int l = 0; l < linhas; l++)
-            for (int c = 0; c < colunas; c++)
-                this.estadoCorreto[l][c] = Math.random() < 0.5 ? Estado.MARCADA : Estado.VAZIO;
 
-        //Quando criar o gabarito, ja calcula as pistas
-        calcularPistas();
-    }
+        erros = 0;
 
-    //aqui compara o tabuleiro atual com o correto, para ver se marcou erro e corrigir
-    public void compararEstado() {
+        // Limpa o tabuleiro
+        for (int l = 0; l < linhas; l++) {
+            for (int c = 0; c < colunas; c++) celulas[l][c] = Estado.INTOCADA;
+        }
 
-        for (int l = 0; l < linhas; l++)
-            for (int c = 0; c < colunas; c++) {
+        // Cria solucao aleatoria
+        // Usada para criar as pistas.
+        Estado[][] solucaoInicial = new Estado[linhas][colunas];
 
-                if((estadoCorreto[l][c] != celulas[l][c]) && celulas[l][c] != Estado.INTOCADA){
-                    erros++;
-                    celulas[l][c] = estadoCorreto[l][c];
-                }
-
-
-            }
-    }
-    // Retorna true se o jogador perdeu (estourou o limite de erros)
-    public boolean isGameOver() {
-        return this.erros >= this.limErros;
-    }
-
-    // Confere se o jogador venceu (retorna boolean em vez de int)
-    public boolean isVitoria() {
         for (int l = 0; l < linhas; l++) {
             for (int c = 0; c < colunas; c++) {
-                // Se a célula deveria ser marcada e não foi
-                if (estadoCorreto[l][c] == Estado.MARCADA && celulas[l][c] != Estado.MARCADA) {
-                    return false; // Não venceu ainda
-                }
-                // Se a célula deveria ser vazia, mas o jogador marcou (erro)
-                if (estadoCorreto[l][c] == Estado.VAZIO && celulas[l][c] == Estado.MARCADA) {
-                    return false; // Não venceu ainda
-                }
+                solucaoInicial[l][c] = Math.random() < 0.5 ? Estado.MARCADA : Estado.VAZIO;
+                // True se < 0.5, False se >= 0.5
             }
         }
-        return true; // Se passou por tudo sem problemas, venceu!
+
+        calcularPistas(solucaoInicial);
+
+        // Gera outras possiveis solucoes
+        gerarPossiveisGabaritos();
     }
 
-    //marca uma casa
-    public void marcar(int l, int c){
-        celulas[l][c] = Estado.MARCADA;
+    private void calcularPistas(Estado[][] estado) {
+
+        pistasLinha = new int[linhas][];
+        pistasColuna = new int[colunas][];
+
+        // LINHAS
+        for (int l = 0; l < linhas; l++) {
+
+            List<Integer> dicas = new ArrayList<>();
+            int bloco = 0;
+
+            for (int c = 0; c < colunas; c++) {
+
+                if (estado[l][c] == Estado.MARCADA) {
+                    bloco++;
+                } else {
+                    if (bloco > 0) {
+                        dicas.add(bloco);
+                        bloco = 0;
+                    }
+                }
+            }
+
+            if (bloco > 0) dicas.add(bloco);
+            if (dicas.isEmpty()) dicas.add(0);
+
+            pistasLinha[l] = new int[dicas.size()];
+
+            for (int i = 0; i < dicas.size(); i++) pistasLinha[l][i] = dicas.get(i);
+        }
+
+        // COLUNAS
+        for (int c = 0; c < colunas; c++) {
+
+            List<Integer> dicas = new ArrayList<>();
+            int bloco = 0;
+
+            for (int l = 0; l < linhas; l++) {
+
+                if (estado[l][c] == Estado.MARCADA) {
+                    bloco++;
+                } else {
+                    if (bloco > 0) {
+                        dicas.add(bloco);
+                        bloco = 0;
+                    }
+                }
+            }
+
+            if (bloco > 0) dicas.add(bloco);
+            if (dicas.isEmpty()) dicas.add(0);
+
+            pistasColuna[c] = new int[dicas.size()];
+
+            for (int i = 0; i < dicas.size(); i++) pistasColuna[c][i] = dicas.get(i);
+        }
     }
-    //marca uma casa como vazio
-    public void vazio(int l, int c){
-        celulas[l][c] = Estado.VAZIO;
+
+    private void gerarPossiveisGabaritos() {
+
+        possiveisGabaritos.clear();
+
+        // Possibilidades de cada linha
+        List<List<boolean[]>> possibilidadesLinhas = new ArrayList<>();
+
+        for (int l = 0; l < linhas; l++) {
+
+            List<boolean[]> possibilidades = new ArrayList<>();
+
+            gerarLinhasPossiveis(
+                    pistasLinha[l],
+                    0,
+                    new boolean[colunas],
+                    possibilidades
+            );
+
+            possibilidadesLinhas.add(possibilidades);
+        }
+
+        /*
+         * Agora combinamos as possibilidades das linhas.
+         *
+         * A poda das colunas evita gerar combinações
+         * impossíveis.
+         */
+        Estado[][] tabuleiro = new Estado[linhas][colunas];
+
+        buscarSolucoes(
+                0,
+                possibilidadesLinhas,
+                tabuleiro
+        );
     }
-    //retorna a quantidade atual de erros
+
+    // Possiveis solucoes da linha
+    private void gerarLinhasPossiveis(
+            int[] pistas,
+            int indicePista,
+            boolean[] linha,
+            List<boolean[]> resultado
+    ) {
+
+        // Linha vazia
+        if (pistas.length == 1 && pistas[0] == 0) {
+            resultado.add(linha.clone());
+            return;
+        }
+
+        gerarBlocos(
+                pistas,
+                indicePista,
+                0,
+                linha,
+                resultado
+        );
+    }
+
+    private void gerarBlocos(
+            int[] pistas,
+            int indicePista,
+            int posicao,
+            boolean[] linha,
+            List<boolean[]> resultado
+    ) {
+
+        // Todos os blocos foram colocados
+        if (indicePista >= pistas.length) {
+            resultado.add(linha.clone());
+            return;
+        }
+
+        int tamanhoBloco = pistas[indicePista];
+        int espacoRestante = 0;
+
+        for (int i = indicePista + 1; i < pistas.length; i++) espacoRestante += pistas[i];
+
+        int blocosRestantes = pistas.length - indicePista - 1;
+        espacoRestante += blocosRestantes;
+
+        int maxInicio = colunas - tamanhoBloco - espacoRestante;
+
+        for (int inicio = posicao; inicio <= maxInicio; inicio++) {
+
+            // Insere bloco
+            for (int i = 0; i < tamanhoBloco; i++) linha[inicio + i] = true;
+
+            int proximaPosicao = inicio + tamanhoBloco;
+
+            // Precisa de pelo menos 1 de espacamento
+            if (indicePista < pistas.length - 1) proximaPosicao++;
+
+            gerarBlocos(
+                    pistas,
+                    indicePista + 1,
+                    proximaPosicao,
+                    linha,
+                    resultado
+            );
+
+            // Desfaz bloco
+            for (int i = 0; i < tamanhoBloco; i++) linha[inicio + i] = false;
+        }
+    }
+
+    private void buscarSolucoes(
+            int linhaAtual,
+            List<List<boolean[]>> possibilidadesLinhas,
+            Estado[][] tabuleiro
+    ) {
+
+        // Todas as linhas foram preenchidas
+        if (linhaAtual == linhas) {
+            Estado[][] solucao = copiarTabuleiro(tabuleiro);
+            possiveisGabaritos.add(solucao);
+            return;
+        }
+
+        for (boolean[] possibilidade : possibilidadesLinhas.get(linhaAtual)) {
+
+            // Coloca a linha no tabuleiro
+            for (int c = 0; c < colunas; c++) {
+                tabuleiro[linhaAtual][c] = possibilidade[c] ? Estado.MARCADA : Estado.VAZIO;
+            }
+
+            if (colunasAindaPossiveis(tabuleiro, linhaAtual)) {
+                buscarSolucoes(
+                        linhaAtual + 1,
+                        possibilidadesLinhas,
+                        tabuleiro
+                );
+            }
+        }
+    }
+
+    // Tratamento das colunas
+    private boolean colunasAindaPossiveis(
+            Estado[][] tabuleiro,
+            int ultimaLinha
+    ) {
+
+        for (int c = 0; c < colunas; c++) {
+
+            int[] pista = pistasColuna[c];
+            int indicePista = 0;
+            int blocoAtual = 0;
+
+            for (int l = 0; l <= ultimaLinha; l++) {
+
+                if (tabuleiro[l][c] == Estado.MARCADA) {
+                    blocoAtual++;
+                } else {
+
+                    if (blocoAtual > 0) {
+
+                        // Bloco ultrapassou pista
+                        if (indicePista >= pista.length) return false;
+
+                        if (blocoAtual != pista[indicePista]) return false;
+
+                        indicePista++;
+                        blocoAtual = 0;
+                    }
+                }
+            }
+
+            // Bloco pode continuar na proxima linha
+            if (blocoAtual > 0) {
+
+                if (indicePista >= pista.length) return false;
+
+                if (blocoAtual > pista[indicePista]) return false;
+            }
+
+            int restantes = linhas - ultimaLinha - 1;
+            int necessario = 0;
+
+            if (blocoAtual > 0) {
+
+                necessario = pista[indicePista] - blocoAtual;
+
+                int proximasPistas = pista.length - indicePista - 1;
+
+                if (proximasPistas > 0) necessario += proximasPistas;
+
+            } else {
+
+                int proximasPistas = pista.length - indicePista;
+
+                if (proximasPistas > 0) {
+
+                    necessario = 0;
+
+                    for (int i = indicePista; i < pista.length; i++) necessario += pista[i];
+
+                    necessario += proximasPistas - 1;
+                }
+            }
+
+            if (necessario > restantes) return false;
+        }
+
+        return true;
+    }
+
+    // Filtra gabaritos
+    public boolean verificarCelula(int l, int c) {
+
+        Estado escolhido = celulas[l][c];
+
+        if (escolhido == Estado.INTOCADA) return true;
+
+        // Remove incompativeis
+        List<Estado[][]> restantes = new ArrayList<>();
+
+        for (Estado[][] gabarito : possiveisGabaritos) {
+            if (gabarito[l][c] == escolhido) restantes.add(gabarito);
+        }
+
+        // Jogada impossivel
+        if (restantes.isEmpty()) {
+
+            erros++;
+
+            // Desfaz a jogada
+            celulas[l][c] = Estado.INTOCADA;
+
+            return false;
+        }
+
+        possiveisGabaritos = restantes;
+
+        return true;
+    }
+
+    // Desmarca
+    public void desmarcar(int l, int c) {
+        celulas[l][c] = Estado.INTOCADA;
+    }
+
+    // Vitoria
+    public boolean isVitoria() {
+
+        // Todas foram preenchidas
+        for (int l = 0; l < linhas; l++) {
+            for (int c = 0; c < colunas; c++) {
+                if (celulas[l][c] == Estado.INTOCADA) return false;
+            }
+        }
+
+        return !possiveisGabaritos.isEmpty();
+    }
+
+    // Getter
+
+    public int[][] getPistasLinha() {
+        return pistasLinha;
+    }
+
+    public int[][] getPistasColuna() {
+        return pistasColuna;
+    }
+
+    public Estado getEstadoCelula(int l, int c) {
+        return celulas[l][c];
+    }
+
+    public int getLinhas() {
+        return linhas;
+    }
+
+    public int getColunas() {
+        return colunas;
+    }
+
     public int qtosErros() {
         return erros;
     }
-    //retorna nome do tabuleiro
+
     public String qualNome() {
         return nome;
     }
 
-    public void calcularPistas(){
-        //Inicializar as matrizes
-        this.pistasLinha = new int[linhas][];
-        this.pistasColuna = new int[colunas][];
+    public int getLimiteErros() {
+        return limErros;
+    }
 
-        //Calculo das pistas das LINHAS
-        for (int l = 0; l < linhas; l++){
-            List<Integer> dicasLinha = new ArrayList<>();
-            int blocosSeguidos = 0;
+    public int getQuantidadeGabaritos() {
+        return possiveisGabaritos.size();
+    }
 
-            for(int c = 0; c < colunas; c++){
-                if(estadoCorreto[l][c] ==  Estado.MARCADA){
-                    blocosSeguidos++;
-                } else {
-                    if(blocosSeguidos > 0){
-                        dicasLinha.add(blocosSeguidos);
-                        blocosSeguidos = 0;
-                    }
-                }
-            }
-            // Adiciona o ultimo bloco se a linha terminar com marcação
-            if(blocosSeguidos > 0){
-                dicasLinha.add(blocosSeguidos);
-            }
+    // Copia tabuleiro
+    private Estado[][] copiarTabuleiro(Estado[][] original) {
 
-            //Se a linha inteira for vazia, a dica padrão é 0
-            if(dicasLinha.isEmpty()){
-                dicasLinha.add(0);
-            }
+        Estado[][] copia = new Estado[linhas][colunas];
 
-            //Converte a lista para o array da classe
-            pistasLinha[l] = new int[dicasLinha.size()];
-            for(int i = 0; i < dicasLinha.size(); i++){
-                pistasLinha[l][i] = dicasLinha.get(i);
-            }
+        for (int l = 0; l < linhas; l++) {
+            for (int c = 0; c < colunas; c++) copia[l][c] = original[l][c];
         }
 
-        ////Calculo das pistas das COLUNAS
-        for(int c = 0; c < colunas; c++){
-            List<Integer> dicasColuna = new ArrayList<>();
-            int blocosSeguidos = 0;
-
-            for(int l = 0; l < linhas; l++){
-                if(estadoCorreto[l][c] == Estado.MARCADA){
-                    blocosSeguidos++;
-                } else{
-                    if(blocosSeguidos > 0){
-                        dicasColuna.add(blocosSeguidos);
-                        blocosSeguidos = 0;
-                    }
-                }
-            }
-            if(blocosSeguidos > 0){
-                dicasColuna.add(blocosSeguidos);
-            }
-            if(dicasColuna.isEmpty()){
-                dicasColuna.add(0);
-            }
-
-            pistasColuna[c] = new int[dicasColuna.size()];
-            for(int i = 0; i < dicasColuna.size(); i++){
-                pistasColuna[c][i] = dicasColuna.get(i);
-            }
-        }
+        return copia;
     }
 
-    //Getters para o GUI
-    public int[][] getPistasLinha(){
-        return pistasLinha;
+    public void marcar(int l, int c) {
+        celulas[l][c] = Estado.MARCADA;
     }
 
-    public int[][] getPistasColuna(){
-        return pistasColuna;
+    public void vazio(int l, int c) {
+        celulas[l][c] = Estado.VAZIO;
     }
 
-    // Método para o Front-end ler o estado de uma célula específica
-    public Estado getEstadoCelula(int l, int c) {
-        return this.celulas[l][c];
+    public boolean isGameOver() {
+        return erros >= limErros;
     }
-
-    // Útil para o Front-end saber o tamanho da grade na hora de criar os botões
-    public int getLinhas() { return linhas; }
-    public int getColunas() { return colunas; }
-
 }
