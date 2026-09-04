@@ -13,11 +13,21 @@ public class TelaJogo extends JFrame {
     private JLabel labelSolucoes;
     private JPanel painelTabuleiro;
 
+    // Banco de puzzles e nível usados para sortear um novo puzzle real
+    // (a partir de imagem) quando o jogador clica em "NOVO JOGO".
+    // Ficam null se a tela for criada com o construtor antigo — nesse
+    // caso "NOVO JOGO" cai de volta no ruído aleatório, como antes.
+    private BancoDePuzzles banco;
+    private CalculadoraDificuldade.Nivel nivel;
+
+
     private static final int LARGURA_PISTAS_LINHAS = 80;
     private static final int ALTURA_PISTAS_COLUNAS = 70;
 
-    public TelaJogo(Tabuleiro tb) {
+    public TelaJogo(Tabuleiro tb, BancoDePuzzles banco, CalculadoraDificuldade.Nivel nivel) {
         this.tb = tb;
+        this.banco = banco;
+        this.nivel = nivel;
         configurarJanela();
         criarInterface();
         atualizarInterface();
