@@ -367,14 +367,11 @@ public class TelaJogo extends JFrame {
         return menu;
     }
 
-    //Cria novo jogo
+    // Cria novo jogo voltando para a tela de seleção
     private void novoJogo() {
-        tb.gerarTabuleiroAleatorio();
-        getContentPane().removeAll();
-        criarInterface();
-        atualizarInterface();
-        revalidate();
-        repaint();
+        this.dispose(); // Fecha a janela do jogo atual
+        TelaSelecao tela = new TelaSelecao(banco); // Abre a tela de escolha novamente
+        tela.setVisible(true);
     }
 
     private void atualizarInterface() {

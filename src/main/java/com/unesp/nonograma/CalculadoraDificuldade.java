@@ -62,8 +62,8 @@ public class CalculadoraDificuldade {
 
         double proporcao = slackMedio / tamanhoReferencia;
 
-        if (proporcao < 0.20) return Nivel.FACIL;
-        if (proporcao < 0.35) return Nivel.MEDIO;
+        if (proporcao < 0.30) return Nivel.FACIL;
+        if (proporcao < 0.45) return Nivel.MEDIO;
         return Nivel.DIFICIL;
     }
 }
