@@ -1,38 +1,60 @@
 package com.unesp.nonograma;
 
 import javax.swing.*;
+import javax.swing.border.EmptyBorder;
 import java.awt.*;
 
 public class TelaSelecao extends JFrame {
-    private BancoDePuzzles banco;
 
-    // Variáveis para os botões de seleção de dificuldade
+    private final BancoDePuzzles banco;
+
     private JRadioButton rbFacil, rbMedio, rbDificil;
 
     public TelaSelecao(BancoDePuzzles banco) {
         this.banco = banco;
+
         setTitle("Nonograma - Configuração do Jogo");
-        setSize(450, 350); // Aumentei um pouco o tamanho para caber a dificuldade
+        setSize(480, 420);
+        setMinimumSize(new Dimension(420, 380));
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
+        getContentPane().setBackground(TemaVisual.FUNDO_JANELA);
 
-        // Layout principal
-        JPanel painel = new JPanel(new GridLayout(5, 1, 10, 10));
-        painel.setBorder(BorderFactory.createEmptyBorder(20, 30, 20, 30));
+        JPanel painel = new JPanel();
+        painel.setLayout(new BoxLayout(painel, BoxLayout.Y_AXIS));
+        painel.setBorder(new EmptyBorder(36, 40, 36, 40));
+        painel.setBackground(TemaVisual.FUNDO_JANELA);
 
-        JLabel labelModo = new JLabel("Configuração da Partida:", SwingConstants.CENTER);
-        labelModo.setFont(new Font("Arial", Font.BOLD, 20));
+        JLabel titulo = new JLabel("NONOGRAMA", SwingConstants.CENTER);
+        titulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        titulo.setFont(TemaVisual.fonteTitulo(32));
+        titulo.setForeground(TemaVisual.ACCENT);
+        painel.add(titulo);
 
-        // --- PAINEL DE DIFICULDADE ---
-        JPanel painelDificuldade = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
-        rbFacil = new JRadioButton("Fácil");
-        rbMedio = new JRadioButton("Médio");
-        rbDificil = new JRadioButton("Difícil");
+        JLabel subtitulo = new JLabel("Configure sua partida", SwingConstants.CENTER);
+        subtitulo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        subtitulo.setFont(TemaVisual.fonteTexto(14));
+        subtitulo.setForeground(TemaVisual.TEXTO_SUAVE);
+        painel.add(subtitulo);
 
-        // Define o Médio como selecionado por padrão
+        painel.add(Box.createVerticalStrut(30));
+
+        JLabel labelDificuldade = new JLabel("DIFICULDADE");
+        labelDificuldade.setAlignmentX(Component.CENTER_ALIGNMENT);
+        labelDificuldade.setFont(TemaVisual.fonteTextoNegrito(13));
+        labelDificuldade.setForeground(TemaVisual.TEXTO_SUAVE);
+        painel.add(labelDificuldade);
+        painel.add(Box.createVerticalStrut(10));
+
+        JPanel painelDificuldade = new JPanel(new FlowLayout(FlowLayout.CENTER, 18, 0));
+        painelDificuldade.setOpaque(false);
+        painelDificuldade.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        rbFacil = criarRadio("Fácil");
+        rbMedio = criarRadio("Médio");
+        rbDificil = criarRadio("Difícil");
         rbMedio.setSelected(true);
 
-        // Agrupa os botões para que apenas um possa ser selecionado por vez
         ButtonGroup grupoDificuldade = new ButtonGroup();
         grupoDificuldade.add(rbFacil);
         grupoDificuldade.add(rbMedio);
@@ -41,31 +63,48 @@ public class TelaSelecao extends JFrame {
         painelDificuldade.add(rbFacil);
         painelDificuldade.add(rbMedio);
         painelDificuldade.add(rbDificil);
+        painel.add(painelDificuldade);
 
-        // --- BOTÕES DE MODO DE JOGO ---
-        JButton btnAleatorio = new JButton("Gerar Aleatório");
-        btnAleatorio.setFont(new Font("Arial", Font.BOLD, 16));
-        btnAleatorio.addActionListener(e -> iniciarJogo(true));
+        painel.add(Box.createVerticalStrut(34));
 
-        JButton btnDesenho = new JButton("Usar Desenho (Imagens)");
-        btnDesenho.setFont(new Font("Arial", Font.BOLD, 16));
-        btnDesenho.addActionListener(e -> iniciarJogo(false));
-
-        // Adicionando tudo à tela
+        JLabel labelModo = new JLabel("MODO DE JOGO");
+        labelModo.setAlignmentX(Component.CENTER_ALIGNMENT);
+        labelModo.setFont(TemaVisual.fonteTextoNegrito(13));
+        labelModo.setForeground(TemaVisual.TEXTO_SUAVE);
         painel.add(labelModo);
-        painel.add(painelDificuldade); // Adiciona as opções de dificuldade
-        painel.add(new JLabel("Escolha o modo para iniciar:", SwingConstants.CENTER)); // Texto instrutivo
+        painel.add(Box.createVerticalStrut(12));
+
+        JButtonEstilizado btnAleatorio = TemaVisual.criarBotao("GERAR ALEATÓRIO", new Color(70, 74, 84));
+        btnAleatorio.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnAleatorio.setMaximumSize(new Dimension(280, 46));
+        btnAleatorio.addActionListener(e -> iniciarJogo(true));
         painel.add(btnAleatorio);
+
+        painel.add(Box.createVerticalStrut(12));
+
+        JButtonEstilizado btnDesenho = TemaVisual.criarBotao("USAR DESENHO (IMAGENS)", TemaVisual.ACCENT_ESCURO);
+        btnDesenho.setAlignmentX(Component.CENTER_ALIGNMENT);
+        btnDesenho.setMaximumSize(new Dimension(280, 46));
+        btnDesenho.addActionListener(e -> iniciarJogo(false));
         painel.add(btnDesenho);
 
         add(painel);
     }
 
-    // Método auxiliar para pegar a dificuldade escolhida nos RadioButtons
+    private JRadioButton criarRadio(String texto) {
+        JRadioButton radio = new JRadioButton(texto);
+        radio.setOpaque(false);
+        radio.setForeground(TemaVisual.TEXTO_CLARO);
+        radio.setFont(TemaVisual.fonteTexto(14));
+        radio.setFocusPainted(false);
+        radio.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        return radio;
+    }
+
     private int obterDificuldadeSelecionada() {
         if (rbFacil.isSelected()) return 1;
         if (rbDificil.isSelected()) return 3;
-        return 2; // Retorna 2 (Médio) por padrão
+        return 2;
     }
 
     private void iniciarJogo(boolean aleatorio) {
@@ -78,7 +117,6 @@ public class TelaSelecao extends JFrame {
         if (aleatorio) {
             tb.gerarTabuleiroAleatorio();
         } else {
-            // Tratamento de erro caso o banco não tenha imagens para a dificuldade escolhida
             try {
                 BancoDePuzzles.PuzzleGerado puzzle = banco.sortear(nivel);
                 tb.carregarPuzzle(puzzle.solucao);
@@ -87,14 +125,13 @@ public class TelaSelecao extends JFrame {
                         "Não há imagens suficientes cadastradas no nível " + nivel + ".\nAdicione mais imagens na pasta ou tente outro nível.",
                         "Falta de Imagens",
                         JOptionPane.WARNING_MESSAGE);
-                return; // Impede que o jogo inicie quebrado e deixa o usuário na tela de seleção
+                return;
             }
         }
 
-        // Se tudo deu certo, abre a tela de jogo
         TelaJogo tela = new TelaJogo(tb, banco, nivel);
         tela.setVisible(true);
-        this.dispose(); // Fecha a tela de seleção
+        this.dispose();
     }
 
     private CalculadoraDificuldade.Nivel mapearNivel(int dificuldade) {
