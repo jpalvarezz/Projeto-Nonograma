@@ -18,6 +18,10 @@ public class TelaJogo extends JFrame {
     private final BancoDePuzzles banco;
     private final CalculadoraDificuldade.Nivel nivel;
 
+    // Puzzle específico usado nesta partida (null no modo aleatório) —
+    // guardamos pra poder mostrar a imagem original na tela de vitória.
+    private final BancoDePuzzles.PuzzleGerado puzzleAtual;
+
     // Estado da jogada em andamento durante um arraste do mouse (estilo Picross):
     // o "alvo" é o estado que está sendo pintado sobre as células por onde o
     // mouse passa, decidido a partir da célula onde o botão foi pressionado.
@@ -25,10 +29,11 @@ public class TelaJogo extends JFrame {
     private boolean erroDuranteArraste = false;
     private boolean telaFimJaMostrada = false;
 
-    public TelaJogo(Tabuleiro tb, BancoDePuzzles banco, CalculadoraDificuldade.Nivel nivel) {
+    public TelaJogo(Tabuleiro tb, BancoDePuzzles banco, CalculadoraDificuldade.Nivel nivel, BancoDePuzzles.PuzzleGerado puzzleAtual) {
         this.tb = tb;
         this.banco = banco;
         this.nivel = nivel;
+        this.puzzleAtual = puzzleAtual;
         configurarJanela();
         criarInterface();
         atualizarInterface();
@@ -176,6 +181,7 @@ public class TelaJogo extends JFrame {
         if (tb.isGameOver()) {
             labelStatus.setForeground(TemaVisual.ERRO);
             labelStatus.setText("VOCÊ PERDEU!");
+            painelTabuleiro.setRevelarCores(true);
             mostrarTelaFim(false, "Você atingiu o limite de " + tb.getLimiteErros() + " erro(s).\nQue tal tentar de novo?");
             return;
         }
@@ -183,6 +189,7 @@ public class TelaJogo extends JFrame {
         if (tb.isVitoria()) {
             labelStatus.setForeground(TemaVisual.SUCESSO);
             labelStatus.setText("VOCÊ VENCEU!");
+            painelTabuleiro.setRevelarCores(true);
             mostrarTelaFim(true, "Parabéns! Você completou o nonograma\ncom " + tb.qtosErros() + " erro(s).");
             return;
         }

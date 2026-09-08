@@ -6,6 +6,12 @@ import java.awt.*;
 /**
  * Janela de fim de jogo (vitória ou derrota), estilizada para combinar
  * com o resto do jogo — em vez do JOptionPane padrão do Swing.
+ *
+ * Na vitória, o desenho original não é mais mostrado aqui como imagem à
+ * parte: o próprio PainelTabuleiro já revela o resultado pintando as
+ * células marcadas com a cor real vinda da imagem (ver
+ * PainelTabuleiro.setRevelarCores), então esta tela fica só com a
+ * mensagem e os botões.
  */
 public class TelaFimDeJogo extends JDialog {
 
@@ -17,6 +23,7 @@ public class TelaFimDeJogo extends JDialog {
     public TelaFimDeJogo(JFrame dono, boolean vitoria, String mensagem, AcoesFimDeJogo acoes) {
         super(dono, true);
         setUndecorated(true);
+
         setSize(400, 300);
         setLocationRelativeTo(dono);
 
@@ -32,11 +39,18 @@ public class TelaFimDeJogo extends JDialog {
         titulo.setBorder(BorderFactory.createEmptyBorder(30, 20, 10, 20));
         raiz.add(titulo, BorderLayout.NORTH);
 
+        JPanel centro = new JPanel();
+        centro.setOpaque(false);
+        centro.setLayout(new BoxLayout(centro, BoxLayout.Y_AXIS));
+        centro.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
+
         JLabel texto = new JLabel("<html><div style='text-align:center;'>" + mensagem + "</div></html>", SwingConstants.CENTER);
+        texto.setAlignmentX(Component.CENTER_ALIGNMENT);
         texto.setFont(TemaVisual.fonteTexto(15));
         texto.setForeground(TemaVisual.TEXTO_SUAVE);
-        texto.setBorder(BorderFactory.createEmptyBorder(0, 30, 20, 30));
-        raiz.add(texto, BorderLayout.CENTER);
+        centro.add(texto);
+
+        raiz.add(centro, BorderLayout.CENTER);
 
         JPanel painelBotoes = new JPanel(new FlowLayout(FlowLayout.CENTER, 15, 0));
         painelBotoes.setOpaque(false);

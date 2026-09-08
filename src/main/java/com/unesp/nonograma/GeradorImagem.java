@@ -1,6 +1,7 @@
 package com.unesp.nonograma;
 
 import javax.imageio.ImageIO;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -183,6 +184,67 @@ public class GeradorImagem {
         }
 
         return melhorLimiar;
+    }
+
+    /**
+     * Calcula a cor média (RGB de verdade, não luminância) de cada célula
+     * do tabuleiro, a partir da imagem original — usada para "revelar" o
+     * tabuleiro com as cores reais quando o jogador vence, em vez de só
+     * preto e branco. Pixels transparentes não entram na média (célula
+     * sem nenhum pixel opaco fica com cor null — cai no fallback de quem
+     * for usar essa cor).
+     */
+    public static Color[][] calcularCoresMedias(BufferedImage imagem, int linhas, int colunas) {
+
+        int largura = imagem.getWidth();
+        int altura = imagem.getHeight();
+
+        double[][] somaR = new double[linhas][colunas];
+        double[][] somaG = new double[linhas][colunas];
+        double[][] somaB = new double[linhas][colunas];
+        int[][] contagem = new int[linhas][colunas];
+
+        for (int y = 0; y < altura; y++) {
+
+            int l = Math.min(linhas - 1, y * linhas / altura);
+
+            for (int x = 0; x < largura; x++) {
+
+                int c = Math.min(colunas - 1, x * colunas / largura);
+
+                int rgb = imagem.getRGB(x, y);
+                int alpha = (rgb >> 24) & 0xFF;
+
+                if (alpha < 128) continue; // fundo transparente não conta na média de cor
+
+                somaR[l][c] += (rgb >> 16) & 0xFF;
+                somaG[l][c] += (rgb >> 8) & 0xFF;
+                somaB[l][c] += rgb & 0xFF;
+                contagem[l][c]++;
+            }
+        }
+
+        Color[][] cores = new Color[linhas][colunas];
+
+        for (int l = 0; l < linhas; l++) {
+            for (int c = 0; c < colunas; c++) {
+
+                int n = contagem[l][c];
+
+                if (n == 0) {
+                    cores[l][c] = null; // célula sem nenhum pixel opaco (fundo)
+                    continue;
+                }
+
+                cores[l][c] = new Color(
+                        (int) Math.round(somaR[l][c] / n),
+                        (int) Math.round(somaG[l][c] / n),
+                        (int) Math.round(somaB[l][c] / n)
+                );
+            }
+        }
+
+        return cores;
     }
 
     public static BufferedImage carregar(File arquivo) throws IOException {

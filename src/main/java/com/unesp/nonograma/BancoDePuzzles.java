@@ -1,6 +1,7 @@
 package com.unesp.nonograma;
 
 import javax.imageio.ImageIO;
+import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -42,16 +43,21 @@ public class BancoDePuzzles {
         public final int[][] pistasColuna;
         public final CalculadoraDificuldade.Nivel nivel;
         public final double slackMedio;
+        public final BufferedImage imagemOriginal;
+        public final Color[][] cores;
 
         PuzzleGerado(String nomeArquivo, Tabuleiro.Estado[][] solucao,
                      int[][] pistasLinha, int[][] pistasColuna,
-                     CalculadoraDificuldade.Nivel nivel, double slackMedio) {
+                     CalculadoraDificuldade.Nivel nivel, double slackMedio,
+                     BufferedImage imagemOriginal, Color[][] cores) {
             this.nomeArquivo = nomeArquivo;
             this.solucao = solucao;
             this.pistasLinha = pistasLinha;
             this.pistasColuna = pistasColuna;
             this.nivel = nivel;
             this.slackMedio = slackMedio;
+            this.imagemOriginal = imagemOriginal;
+            this.cores = cores;
         }
     }
 
@@ -121,7 +127,8 @@ public class BancoDePuzzles {
             double slack = CalculadoraDificuldade.slackMedio(pistasLinha, pistasColuna, LINHAS, COLUNAS);
             CalculadoraDificuldade.Nivel nivel = CalculadoraDificuldade.classificar(slack, COLUNAS);
 
-            PuzzleGerado puzzle = new PuzzleGerado(arquivo.getName(), solucao, pistasLinha, pistasColuna, nivel, slack);
+            PuzzleGerado puzzle = new PuzzleGerado(arquivo.getName(), solucao, pistasLinha, pistasColuna, nivel, slack,
+                    imagem, GeradorImagem.calcularCoresMedias(imagem, LINHAS, COLUNAS));
 
             banco.get(nivel).add(puzzle);
             System.out.printf("%s -> nível %s (slack médio %.2f, limiar %d)%n",

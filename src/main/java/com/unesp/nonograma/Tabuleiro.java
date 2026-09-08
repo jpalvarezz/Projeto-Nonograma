@@ -1,5 +1,6 @@
 package com.unesp.nonograma;
 
+import java.awt.Color;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +30,11 @@ public class Tabuleiro {
 
     // Cada Estado[][] representa uma possivel solução
     private List<Estado[][]> possiveisGabaritos;
+
+    // Cor média real de cada célula, vinda da imagem original (null se o
+    // puzzle não veio de imagem, ex: modo aleatório — nesse caso o
+    // tabuleiro cai de volta na cor monocromática padrão).
+    private Color[][] cores;
 
     public Tabuleiro(String nome, int linhas, int colunas) {
 
@@ -89,15 +95,28 @@ public class Tabuleiro {
         carregarPuzzle(solucaoInicial);
     }
     /**
+     * Carrega um puzzle a partir de uma solução pronta, sem cores reais
+     * (usado pelo modo aleatório). Equivale a carregarPuzzle(solucao, null).
+     */
+    public void carregarPuzzle(Estado[][] solucao) {
+        carregarPuzzle(solucao, null);
+    }
+
+    /**
      * Carrega um puzzle a partir de uma solução pronta (por exemplo, gerada
      * a partir de uma imagem via GeradorImagem + BancoDePuzzles). Calcula
      * as pistas e recalcula todos os gabaritos possíveis compatíveis com
      * elas — o ideal é que essa solução já tenha sido validada como única
      * antes de chegar aqui (é isso que BancoDePuzzles faz na geração).
+     *
+     * @param cores cor média real de cada célula, vinda da imagem original,
+     *              usada para "revelar" o tabuleiro colorido na vitória.
+     *              Pode ser null (puzzle sem imagem de origem, ex: aleatório).
      */
-    public void carregarPuzzle(Estado[][] solucao) {
+    public void carregarPuzzle(Estado[][] solucao, Color[][] cores) {
 
         erros = 0;
+        this.cores = cores;
 
         for (int l = 0; l < linhas; l++) {
             for (int c = 0; c < colunas; c++) celulas[l][c] = Estado.INTOCADA;
@@ -107,6 +126,21 @@ public class Tabuleiro {
         pistasColuna = SolverNonograma.calcularPistasColuna(solucao, linhas, colunas);
 
         possiveisGabaritos = SolverNonograma.gerarTodasSolucoes(pistasLinha, pistasColuna, linhas, colunas);
+    }
+
+    /** Cor real da célula (l, c), ou null se não houver imagem de origem / célula de fundo. */
+    public Color getCorCelula(int l, int c) {
+        return cores != null ? cores[l][c] : null;
+    }
+
+    /**
+     * Devolve o gabarito já quando a lista de possibilidades convergiu pra
+     * um só (mesmo critério usado por isVitoria) — usado pela tela pra
+     * "revelar" o desenho completo assim que o jogador vence. Retorna null
+     * enquanto ainda houver mais de uma solução possível.
+     */
+    public Estado[][] getGabaritoSeUnico() {
+        return possiveisGabaritos.size() == 1 ? possiveisGabaritos.get(0) : null;
     }
 
     // Filtra gabaritos
@@ -144,17 +178,36 @@ public class Tabuleiro {
         celulas[l][c] = Estado.INTOCADA;
     }
 
-    // Vitoria
+    /**
+     * Vitória: não é mais necessário preencher TODAS as células (inclusive
+     * as vazias) — marcar VAZIO é só um apoio visual/lógico pro jogador,
+     * que ainda assim conta como erro se for feito no lugar errado (isso
+     * já é tratado em verificarCelula).
+     *
+     * A condição real de vitória é:
+     *  1) a lista de gabaritos possíveis já convergiu pra um só (ou seja,
+     *     não sobrou ambiguidade sobre qual é a solução — pra puzzles de
+     *     imagem isso já é verdade desde o início, já que o BancoDePuzzles
+     *     só aceita imagens com solução única; pra puzzles aleatórios pode
+     *     ser preciso marcar alguns vazios pra eliminar as outras hipóteses);
+     *  2) toda célula que é MARCADA nesse gabarito único já foi marcada
+     *     como MARCADA pelo jogador.
+     */
     public boolean isVitoria() {
 
-        // Todas foram preenchidas
+        if (possiveisGabaritos.size() != 1) return false;
+
+        Estado[][] solucao = possiveisGabaritos.get(0);
+
         for (int l = 0; l < linhas; l++) {
             for (int c = 0; c < colunas; c++) {
-                if (celulas[l][c] == Estado.INTOCADA) return false;
+                if (solucao[l][c] == Estado.MARCADA && celulas[l][c] != Estado.MARCADA) {
+                    return false;
+                }
             }
         }
 
-        return !possiveisGabaritos.isEmpty();
+        return true;
     }
 
     // Getter

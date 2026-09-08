@@ -10,24 +10,6 @@ import java.awt.geom.RoundRectangle2D;
  * Componente que desenha o tabuleiro inteiro (pistas de linha, pistas de
  * coluna e a grade de células) em tempo real, num único Graphics2D, em
  * vez de usar uma grade de JButton dentro de um GridLayout.
- *
- * Isso resolve dois problemas que a versão antiga (JButton + GridLayout)
- * tinha:
- *
- *  1) Ao redimensionar a janela (ex: tela cheia), o GridLayout esticava
- *     as células para preencher todo o espaço disponível, e como a
- *     largura e a altura da área raramente são iguais, as células
- *     viravam retângulos em vez de quadrados.
- *
- *  2) Cada célula era um JButton independente, então não dava pra saber
- *     "o mouse passou por cima desta célula enquanto o botão estava
- *     pressionado" — só clique. Isso impedia o recurso de arrastar
- *     (como no Picross) para marcar várias células de uma vez.
- *
- * Aqui o tamanho da célula é sempre recalculado a partir do espaço
- * disponível, mas o menor lado (largura ou altura) manda — garantindo
- * célula quadrada sempre, com uma margem sobrando (que fica centralizada)
- * em vez de esticar.
  */
 public class PainelTabuleiro extends JPanel {
 
@@ -47,6 +29,11 @@ public class PainelTabuleiro extends JPanel {
     private double larguraPistas, alturaPistas;
 
     private int hoverLinha = -1, hoverColuna = -1;
+
+    // Quando true, TODAS as células são pintadas com a cor real vinda da
+    // imagem original (ver Tabuleiro.getCorCelula), em vez do padrão de jogo
+    // — usado para "revelar" a imagem completa no fim da partida.
+    private boolean revelarCores = false;
 
     public PainelTabuleiro(Tabuleiro tabuleiro, OuvinteTabuleiro ouvinte) {
         this.tabuleiro = tabuleiro;
@@ -96,6 +83,12 @@ public class PainelTabuleiro extends JPanel {
         addMouseMotionListener(mouse);
     }
 
+    /** Ativa/desativa a revelação das cores reais nas células (fim de jogo). */
+    public void setRevelarCores(boolean revelar) {
+        this.revelarCores = revelar;
+        repaint();
+    }
+
     private void atualizarHover(int linha, int coluna) {
         if (linha != hoverLinha || coluna != hoverColuna) {
             hoverLinha = linha;
@@ -137,9 +130,6 @@ public class PainelTabuleiro extends JPanel {
         int maxBlocosColuna = 1;
         for (int[] p : pistasColuna) maxBlocosColuna = Math.max(maxBlocosColuna, p.length);
 
-        // Reserva de espaço para as pistas, medida em "unidades de célula" —
-        // limitada a uma faixa razoável pra não comer o tabuleiro inteiro
-        // quando o puzzle tem pistas muito longas.
         double unidadesLargura = clamp(maxBlocosLinha * 0.85, 2.2, 4.5);
         double unidadesAltura = clamp(maxBlocosColuna * 0.85, 2.0, 4.0);
 
@@ -157,13 +147,19 @@ public class PainelTabuleiro extends JPanel {
         double larguraTotal = larguraPistas + colunas * cellSize;
         double alturaTotal = alturaPistas + linhas * cellSize;
 
-        // Centraliza o bloco inteiro (pistas + grade) no espaço disponível
         origemX = (largura - larguraTotal) / 2.0 + larguraPistas;
         origemY = (altura - alturaTotal) / 2.0 + alturaPistas;
     }
 
     private static double clamp(double v, double min, double max) {
         return Math.max(min, Math.min(max, v));
+    }
+
+    private static Color clarearLeve(Color cor) {
+        int r = Math.min(255, cor.getRed() + 28);
+        int g = Math.min(255, cor.getGreen() + 28);
+        int b = Math.min(255, cor.getBlue() + 28);
+        return new Color(r, g, b);
     }
 
     @Override
@@ -193,7 +189,6 @@ public class PainelTabuleiro extends JPanel {
 
         g2.setColor(TemaVisual.FAIXA_DESTAQUE);
 
-        // Faixa da linha e da coluna sob o mouse (inclui a área das pistas, fica mais fácil de ler)
         g2.fill(new Rectangle2DDouble(origemX - larguraPistas, origemY + hoverLinha * cellSize, larguraPistas + colunas * cellSize, cellSize));
         g2.fill(new Rectangle2DDouble(origemX + hoverColuna * cellSize, origemY - alturaPistas, cellSize, alturaPistas + linhas * cellSize));
     }
@@ -210,9 +205,22 @@ public class PainelTabuleiro extends JPanel {
                 double x = origemX + c * cellSize;
                 double y = origemY + l * cellSize;
 
-                Tabuleiro.Estado estado = tabuleiro.getEstadoCelula(l, c);
-
                 boolean emDestaque = (l == hoverLinha || c == hoverColuna);
+
+                // --- REVELAÇÃO DA IMAGEM NA VITÓRIA ---
+                // Se revelarCores for true, pinta a cor real da imagem em TODAS as células,
+                // independente de serem marcadas ou vazias no jogo.
+                if (revelarCores) {
+                    Color corReal = tabuleiro.getCorCelula(l, c);
+                    if (corReal != null) {
+                        g2.setColor(emDestaque ? clarearLeve(corReal) : corReal);
+                        g2.fill(new Rectangle2DDouble(x, y, cellSize, cellSize));
+                        continue; // Pula para a próxima célula sem passar pelo switch normal
+                    }
+                }
+
+                // --- MODO NORMAL DE JOGO ---
+                Tabuleiro.Estado estado = tabuleiro.getEstadoCelula(l, c);
 
                 switch (estado) {
                     case MARCADA -> {
@@ -300,7 +308,6 @@ public class PainelTabuleiro extends JPanel {
 
             double centroX = origemX + c * cellSize + cellSize / 2.0;
 
-            // Desenha de baixo pra cima (o número mais próximo da grade é o último bloco da coluna)
             double yBase = origemY - cellSize * 0.18;
 
             for (int i = pista.length - 1; i >= 0; i--) {
@@ -326,8 +333,6 @@ public class PainelTabuleiro extends JPanel {
         return new Dimension(560, 560);
     }
 
-    // Pequenos wrappers só pra deixar as chamadas de desenho acima mais legíveis
-    // (Java2D já tem Rectangle2D.Double e Line2D.Double, mas com nome bem verboso).
     private static class Rectangle2DDouble extends java.awt.geom.Rectangle2D.Double {
         Rectangle2DDouble(double x, double y, double w, double h) { super(x, y, w, h); }
     }
