@@ -9,10 +9,12 @@ import java.awt.event.ActionListener;
  * Tela de configuração da partida.
  *
  * A dificuldade (Fácil/Médio/Difícil) só faz sentido no modo Aleatório —
- * no modo Desenho (imagens), o BancoDePuzzles já garante solução única
- * a partir da própria imagem, então o nível fica padronizado em MÉDIO e
- * os rádios de dificuldade aparecem desabilitados como indicação visual
- * de que a escolha não se aplica.
+ * no modo Desenho (imagens), os puzzles são um conjunto fixo e pequeno
+ * (desenhados à mão em BancoDePuzzles), então não faz sentido o jogador
+ * escolher nível: o jogo apenas sorteia um dos desenhos cadastrados,
+ * qualquer que seja sua dificuldade real. Os rádios de dificuldade
+ * aparecem desabilitados nesse modo como indicação visual de que a
+ * escolha não se aplica.
  */
 public class TelaSelecao extends JFrame {
 
@@ -106,7 +108,7 @@ public class TelaSelecao extends JFrame {
         painelDificuldade.add(rbDificil);
         painel.add(painelDificuldade);
 
-        JLabel avisoImagem = new JLabel("No modo Desenho, o nível é sempre Médio", SwingConstants.CENTER);
+        JLabel avisoImagem = new JLabel("No modo Desenho, um dos puzzles é sorteado", SwingConstants.CENTER);
         avisoImagem.setAlignmentX(Component.CENTER_ALIGNMENT);
         avisoImagem.setFont(TemaVisual.fonteTexto(11));
         avisoImagem.setForeground(new Color(120, 124, 134));
@@ -158,29 +160,43 @@ public class TelaSelecao extends JFrame {
 
     private void iniciarJogo(boolean aleatorio) {
 
-        // No modo Desenho a dificuldade não é escolhida pelo jogador —
-        // fica sempre padronizada em Médio (2).
-        int dificuldadeEscolhida = aleatorio ? obterDificuldadeSelecionada() : 2;
-        CalculadoraDificuldade.Nivel nivel = mapearNivel(dificuldadeEscolhida);
-
-        Tabuleiro tb = new Tabuleiro(aleatorio ? "Aleatório" : "Desenho", 10, 10);
-        tb.setDificuldade(dificuldadeEscolhida);
-
         BancoDePuzzles.PuzzleGerado puzzleEscolhido = null;
+        CalculadoraDificuldade.Nivel nivel;
+        int dificuldadeEscolhida;
 
         if (aleatorio) {
-            tb.gerarTabuleiroAleatorio();
+
+            dificuldadeEscolhida = obterDificuldadeSelecionada();
+            nivel = mapearNivel(dificuldadeEscolhida);
+
         } else {
+
+            // No modo Desenho não existe escolha de dificuldade — sorteia
+            // livremente entre todos os puzzles cadastrados em BancoDePuzzles.
             try {
-                puzzleEscolhido = banco.sortear(nivel);
-                tb.carregarPuzzle(puzzleEscolhido.solucao, puzzleEscolhido.cores);
+                puzzleEscolhido = banco.sortear();
             } catch (IllegalStateException ex) {
                 JOptionPane.showMessageDialog(this,
-                        "Não há imagens suficientes cadastradas no nível " + nivel + ".\nAdicione mais imagens na pasta.",
+                        "Nenhum puzzle cadastrado.\nAdicione desenhos em BancoDePuzzles.DEFINICOES.",
                         "Falta de Imagens",
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
+
+            // O nível exibido/guardado passa a refletir a dificuldade real
+            // do puzzle sorteado (calculada a partir do próprio padrão),
+            // em vez de um valor fixo artificial.
+            nivel = puzzleEscolhido.nivel;
+            dificuldadeEscolhida = mapearDificuldade(nivel);
+        }
+
+        Tabuleiro tb = new Tabuleiro(aleatorio ? "Aleatório" : "Desenho", 10, 10);
+        tb.setDificuldade(dificuldadeEscolhida);
+
+        if (aleatorio) {
+            tb.gerarTabuleiroAleatorio();
+        } else {
+            tb.carregarPuzzle(puzzleEscolhido.solucao, puzzleEscolhido.imagem);
         }
 
         TelaJogo tela = new TelaJogo(tb, banco, nivel, puzzleEscolhido);
@@ -193,6 +209,14 @@ public class TelaSelecao extends JFrame {
             case 1: return CalculadoraDificuldade.Nivel.FACIL;
             case 3: return CalculadoraDificuldade.Nivel.DIFICIL;
             default: return CalculadoraDificuldade.Nivel.MEDIO;
+        }
+    }
+
+    private int mapearDificuldade(CalculadoraDificuldade.Nivel nivel) {
+        switch (nivel) {
+            case FACIL: return 1;
+            case DIFICIL: return 3;
+            default: return 2;
         }
     }
 }

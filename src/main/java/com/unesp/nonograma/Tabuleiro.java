@@ -1,6 +1,6 @@
 package com.unesp.nonograma;
 
-import java.awt.Color;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,10 +38,10 @@ public class Tabuleiro {
     // Cada Estado[][] representa uma possivel solução
     private List<Estado[][]> possiveisGabaritos;
 
-    // Cor média real de cada célula, vinda da imagem original (null se o
-    // puzzle não veio de imagem, ex: modo aleatório — nesse caso o
-    // tabuleiro cai de volta na cor monocromática padrão).
-    private Color[][] cores;
+    // Imagem original de onde a solução veio (null se o puzzle não veio de
+    // imagem, ex: modo aleatório) — usada pra "revelar" o desenho completo
+    // na vitória.
+    private BufferedImage imagem;
 
     public Tabuleiro(String nome, int linhas, int colunas) {
 
@@ -118,14 +118,14 @@ public class Tabuleiro {
      * elas — o ideal é que essa solução já tenha sido validada como única
      * antes de chegar aqui (é isso que BancoDePuzzles faz na geração).
      *
-     * @param cores cor média real de cada célula, vinda da imagem original,
-     *              usada para "revelar" o tabuleiro colorido na vitória.
-     *              Pode ser null (puzzle sem imagem de origem, ex: aleatório).
+     * @param imagem imagem original de onde a solução veio, usada para
+     *               "revelar" o desenho completo na vitória. Pode ser null
+     *               (puzzle sem imagem de origem, ex: aleatório).
      */
-    public void carregarPuzzle(Estado[][] solucao, Color[][] cores) {
+    public void carregarPuzzle(Estado[][] solucao, BufferedImage imagem) {
 
         erros = 0;
-        this.cores = cores;
+        this.imagem = imagem;
 
         for (int l = 0; l < linhas; l++) {
             for (int c = 0; c < colunas; c++) {
@@ -141,9 +141,9 @@ public class Tabuleiro {
         possiveisGabaritos = SolverNonograma.gerarTodasSolucoes(pistasLinha, pistasColuna, linhas, colunas);
     }
 
-    /** Cor real da célula (l, c), ou null se não houver imagem de origem / célula de fundo. */
-    public Color getCorCelula(int l, int c) {
-        return cores != null ? cores[l][c] : null;
+    /** Imagem original de onde a solução veio, ou null se não houver imagem de origem. */
+    public BufferedImage getImagem() {
+        return imagem;
     }
 
     /**

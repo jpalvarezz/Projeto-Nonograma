@@ -1,160 +1,210 @@
 package com.unesp.nonograma;
 
-import javax.imageio.ImageIO;
-import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 
 /**
- * Carrega as imagens de um banco fixo (pasta de recursos), converte cada
- * uma em um puzzle válido (com solução única) e classifica a dificuldade
- * real de cada uma via CalculadoraDificuldade, agrupando por nível.
- *
- * O tamanho do tabuleiro é fixo (10x10) em todas as dificuldades — só o
- * padrão da imagem (e o limiar de conversão que acabou funcionando) muda.
+ * Banco de puzzles com soluções desenhadas à mão (matriz 10x10 fixa).
+ * Cada desenho tem um padrão MARCADA/VAZIO definido em DEFINICOES e uma
+ * imagem correspondente (carregada da pasta de recursos) usada só pra
+ * "revelar" ao jogador depois que ele resolve o nonograma.
  *
  * Uso esperado:
  *   BancoDePuzzles banco = new BancoDePuzzles(new File("src/main/resources/imagens"));
- *   BancoDePuzzles.PuzzleGerado puzzle = banco.sortear(CalculadoraDificuldade.Nivel.FACIL);
- *   Tabuleiro tb = new Tabuleiro("Nonograma", 10, 10);
- *   tb.carregarPuzzle(puzzle.solucao);
+ *   BancoDePuzzles.PuzzleGerado puzzle = banco.sortear();
+ *   // manda puzzle.pistasLinha / puzzle.pistasColuna pro jogador resolver
+ *   // ao terminar, mostra puzzle.imagem
  */
 public class BancoDePuzzles {
 
     private static final int LINHAS = 10;
     private static final int COLUNAS = 10;
 
-    // Candidatos de limiar testados por imagem, do mais restritivo ao mais permissivo.
-    // Fica com o primeiro que resultar em solução única.
-    private static final int[] LIMIARES_CANDIDATOS = {100, 128, 150, 180};
+    /** Um desenho: nome, arquivo de imagem pra reveal, e o padrão 10x10 ('X' = marcada, '.' = vazio). */
+    private static final class DefinicaoPuzzle {
+        final String nome;
+        final String arquivoImagem;
+        final String[] padrao;
 
-    private final Map<CalculadoraDificuldade.Nivel, List<PuzzleGerado>> banco =
-            new EnumMap<>(CalculadoraDificuldade.Nivel.class);
+        DefinicaoPuzzle(String nome, String arquivoImagem, String[] padrao) {
+            this.nome = nome;
+            this.arquivoImagem = arquivoImagem;
+            this.padrao = padrao;
+        }
+    }
 
+    // ---- Desenhos cadastrados ----
+    private static final List<DefinicaoPuzzle> DEFINICOES = List.of(
+
+            new DefinicaoPuzzle("flor", "flor.jpg", new String[] {
+                    "..X.X.X...",
+                    ".XX.X.XX..",
+                    ".XXXXXXX..",
+                    "..XXXXX...",
+                    "..XXXXX.X.",
+                    ".X.XXX.XX.",
+                    ".XX.X.XX..",
+                    "..X.X.XX..",
+                    "..XXXXX...",
+                    "...XXX...."
+            }),
+
+            new DefinicaoPuzzle("pintinho", "pintinho.jpg", new String[] {
+                    "...XXXX...",
+                    "..XXXXXX..",
+                    ".X..XX..X.",
+                    ".X.XXXX.X.",
+                    "XXXXXXXXXX",
+                    "XXXXXXXXXX",
+                    "XXXXXXXXXX",
+                    ".XXXXXXXX.",
+                    "...XXXX...",
+                    ".XXX..XXX."
+            }),
+
+            new DefinicaoPuzzle("raposa", "raposa.jpg", new String[] {
+                    "..........",
+                    ".X.......X",
+                    ".XX.....XX",
+                    ".XXX...XXX",
+                    ".XXXXXXXXX",
+                    ".XXXXXXXXX",
+                    ".XXXXXXXXX",
+                    "..XXXXXXX.",
+                    "...XXXXX..",
+                    "....XXX..."
+            })
+    );
+
+    private final List<PuzzleGerado> banco = new ArrayList<>();
     private final Random random = new Random();
 
     public static class PuzzleGerado {
 
-        public final String nomeArquivo;
+        public final String nome;
         public final Tabuleiro.Estado[][] solucao;
         public final int[][] pistasLinha;
         public final int[][] pistasColuna;
         public final CalculadoraDificuldade.Nivel nivel;
         public final double slackMedio;
-        public final BufferedImage imagemOriginal;
-        public final Color[][] cores;
+        public final BufferedImage imagem;
 
-        PuzzleGerado(String nomeArquivo, Tabuleiro.Estado[][] solucao,
+        PuzzleGerado(String nome, Tabuleiro.Estado[][] solucao,
                      int[][] pistasLinha, int[][] pistasColuna,
                      CalculadoraDificuldade.Nivel nivel, double slackMedio,
-                     BufferedImage imagemOriginal, Color[][] cores) {
-            this.nomeArquivo = nomeArquivo;
+                     BufferedImage imagem) {
+            this.nome = nome;
             this.solucao = solucao;
             this.pistasLinha = pistasLinha;
             this.pistasColuna = pistasColuna;
             this.nivel = nivel;
             this.slackMedio = slackMedio;
-            this.imagemOriginal = imagemOriginal;
-            this.cores = cores;
+            this.imagem = imagem;
         }
     }
 
     public BancoDePuzzles(File pastaImagens) {
-
-        for (CalculadoraDificuldade.Nivel nivel : CalculadoraDificuldade.Nivel.values()) {
-            banco.put(nivel, new ArrayList<>());
-        }
-
-        if (pastaImagens == null || !pastaImagens.isDirectory()) {
-            System.err.println("Pasta de imagens não encontrada: " + pastaImagens);
-            return;
-        }
-
-        File[] arquivos = pastaImagens.listFiles((dir, nome) -> {
-            String n = nome.toLowerCase();
-            return n.endsWith(".png") || n.endsWith(".jpg") || n.endsWith(".jpeg");
-        });
-
-        if (arquivos == null) return;
-
-        Arrays.sort(arquivos, Comparator.comparing(File::getName));
-
-        for (File arquivo : arquivos) {
-            processarImagem(arquivo);
+        for (DefinicaoPuzzle def : DEFINICOES) {
+            processarDefinicao(def, pastaImagens);
         }
     }
 
-    private void processarImagem(File arquivo) {
+    private void processarDefinicao(DefinicaoPuzzle def, File pastaImagens) {
 
-        BufferedImage imagem;
+        Tabuleiro.Estado[][] solucao = converterPadrao(def.padrao, LINHAS, COLUNAS);
 
+        int[][] pistasLinha = SolverNonograma.calcularPistasLinha(solucao, LINHAS, COLUNAS);
+        int[][] pistasColuna = SolverNonograma.calcularPistasColuna(solucao, LINHAS, COLUNAS);
+
+        // Garantia de sanidade: mesmo desenhando à mão, confere se o
+        // conjunto de pistas resultante não é ambíguo.
+        List<Tabuleiro.Estado[][]> todasSolucoes =
+                SolverNonograma.gerarTodasSolucoes(pistasLinha, pistasColuna, LINHAS, COLUNAS);
+
+        if (todasSolucoes.size() != 1) {
+            System.err.println("Aviso: '" + def.nome + "' tem " + todasSolucoes.size()
+                    + " soluções possíveis (não é único) — revise o padrão.");
+        }
+
+        double slack = CalculadoraDificuldade.slackMedio(pistasLinha, pistasColuna, LINHAS, COLUNAS);
+        CalculadoraDificuldade.Nivel nivel = CalculadoraDificuldade.classificar(slack, COLUNAS);
+
+        BufferedImage imagem = carregarImagem(pastaImagens, def.arquivoImagem);
+
+        banco.add(new PuzzleGerado(def.nome, solucao, pistasLinha, pistasColuna, nivel, slack, imagem));
+
+        System.out.printf("%s -> nível %s (slack médio %.2f)%n", def.nome, nivel, slack);
+    }
+
+    private static Tabuleiro.Estado[][] converterPadrao(String[] padrao, int linhas, int colunas) {
+
+        if (padrao.length != linhas) {
+            throw new IllegalArgumentException("Padrão precisa ter " + linhas + " linhas.");
+        }
+
+        Tabuleiro.Estado[][] grade = new Tabuleiro.Estado[linhas][colunas];
+
+        for (int l = 0; l < linhas; l++) {
+            String linha = padrao[l];
+            if (linha.length() != colunas) {
+                throw new IllegalArgumentException(
+                        "Linha " + l + " precisa ter " + colunas + " caracteres (tem " + linha.length() + ").");
+            }
+            for (int c = 0; c < colunas; c++) {
+                char ch = linha.charAt(c);
+                grade[l][c] = (ch == 'X' || ch == 'x') ? Tabuleiro.Estado.MARCADA : Tabuleiro.Estado.VAZIO;
+            }
+        }
+
+        return grade;
+    }
+
+    private BufferedImage carregarImagem(File pasta, String nomeArquivo) {
+        if (pasta == null || nomeArquivo == null) return null;
+        File arquivo = new File(pasta, nomeArquivo);
         try {
-            imagem = ImageIO.read(arquivo);
+            return GeradorImagem.carregar(arquivo);
         } catch (IOException e) {
-            System.err.println("Não foi possível ler " + arquivo.getName() + ": " + e.getMessage());
-            return;
+            System.err.println("Não foi possível carregar '" + nomeArquivo + "': " + e.getMessage());
+            return null;
         }
-
-        if (imagem == null) {
-            System.err.println("Formato não suportado: " + arquivo.getName());
-            return;
-        }
-
-        // Tenta primeiro o limiar calculado automaticamente pra essa imagem
-        // (método de Otsu); se não der solução única, cai nos candidatos fixos.
-        List<Integer> candidatos = new ArrayList<>();
-        candidatos.add(GeradorImagem.calcularLimiarOtsu(imagem));
-
-        for (int fixo : LIMIARES_CANDIDATOS) {
-            if (!candidatos.contains(fixo)) candidatos.add(fixo);
-        }
-
-        for (int limiar : candidatos) {
-
-            Tabuleiro.Estado[][] solucao = GeradorImagem.converter(imagem, LINHAS, COLUNAS, limiar);
-
-            int[][] pistasLinha = SolverNonograma.calcularPistasLinha(solucao, LINHAS, COLUNAS);
-            int[][] pistasColuna = SolverNonograma.calcularPistasColuna(solucao, LINHAS, COLUNAS);
-
-            List<Tabuleiro.Estado[][]> todasSolucoes =
-                    SolverNonograma.gerarTodasSolucoes(pistasLinha, pistasColuna, LINHAS, COLUNAS);
-
-            // Só aceita se a solução for única — senão o puzzle é ambíguo
-            if (todasSolucoes.size() != 1) continue;
-
-            double slack = CalculadoraDificuldade.slackMedio(pistasLinha, pistasColuna, LINHAS, COLUNAS);
-            CalculadoraDificuldade.Nivel nivel = CalculadoraDificuldade.classificar(slack, COLUNAS);
-
-            PuzzleGerado puzzle = new PuzzleGerado(arquivo.getName(), solucao, pistasLinha, pistasColuna, nivel, slack,
-                    imagem, GeradorImagem.calcularCoresMedias(imagem, LINHAS, COLUNAS));
-
-            banco.get(nivel).add(puzzle);
-            System.out.printf("%s -> nível %s (slack médio %.2f, limiar %d)%n",
-                    arquivo.getName(), nivel, slack, limiar);
-            return;
-        }
-
-        System.err.println("Nenhum limiar gerou solução única para " + arquivo.getName() + " — pulando.");
     }
 
+    /** Sorteia um puzzle qualquer entre todos os desenhos cadastrados. */
+    public PuzzleGerado sortear() {
+        if (banco.isEmpty()) {
+            throw new IllegalStateException("Nenhum puzzle cadastrado em DEFINICOES.");
+        }
+        return banco.get(random.nextInt(banco.size()));
+    }
+
+    /** Sorteia um puzzle de um nível específico, se houver algum cadastrado nesse nível. */
     public PuzzleGerado sortear(CalculadoraDificuldade.Nivel nivel) {
 
-        List<PuzzleGerado> lista = banco.get(nivel);
-
-        if (lista == null || lista.isEmpty()) {
-            throw new IllegalStateException(
-                    "Nenhum puzzle disponível para o nível " + nivel +
-                            ". Adicione mais imagens em src/main/resources/imagens, " +
-                            "ou ajuste os cortes em CalculadoraDificuldade.classificar()."
-            );
+        List<PuzzleGerado> doNivel = new ArrayList<>();
+        for (PuzzleGerado p : banco) {
+            if (p.nivel == nivel) doNivel.add(p);
         }
 
-        return lista.get(random.nextInt(lista.size()));
+        if (doNivel.isEmpty()) {
+            throw new IllegalStateException("Nenhum puzzle disponível para o nível " + nivel
+                    + ". Cadastre mais desenhos em DEFINICOES.");
+        }
+
+        return doNivel.get(random.nextInt(doNivel.size()));
+    }
+
+    public int quantidade() {
+        return banco.size();
     }
 
     public int quantidade(CalculadoraDificuldade.Nivel nivel) {
-        return banco.get(nivel).size();
+        int total = 0;
+        for (PuzzleGerado p : banco) {
+            if (p.nivel == nivel) total++;
+        }
+        return total;
     }
 }

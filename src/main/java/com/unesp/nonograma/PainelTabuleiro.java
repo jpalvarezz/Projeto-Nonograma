@@ -5,6 +5,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.RoundRectangle2D;
+import java.awt.image.BufferedImage;
 
 /**
  * Componente que desenha o tabuleiro inteiro (pistas de linha, pistas de
@@ -30,9 +31,9 @@ public class PainelTabuleiro extends JPanel {
 
     private int hoverLinha = -1, hoverColuna = -1;
 
-    // Quando true, TODAS as células são pintadas com a cor real vinda da
-    // imagem original (ver Tabuleiro.getCorCelula), em vez do padrão de jogo
-    // — usado para "revelar" a imagem completa no fim da partida.
+    // Quando true, a grade inteira é substituída pela imagem original
+    // (ver Tabuleiro.getImagem), em vez do padrão de jogo — usado para
+    // "revelar" a imagem completa no fim da partida.
     private boolean revelarCores = false;
 
     public PainelTabuleiro(Tabuleiro tabuleiro, OuvinteTabuleiro ouvinte) {
@@ -83,7 +84,7 @@ public class PainelTabuleiro extends JPanel {
         addMouseMotionListener(mouse);
     }
 
-    /** Ativa/desativa a revelação das cores reais nas células (fim de jogo). */
+    /** Ativa/desativa a revelação da imagem real (fim de jogo). */
     public void setRevelarCores(boolean revelar) {
         this.revelarCores = revelar;
         repaint();
@@ -197,6 +198,18 @@ public class PainelTabuleiro extends JPanel {
         int linhas = tabuleiro.getLinhas();
         int colunas = tabuleiro.getColunas();
 
+        // --- REVELAÇÃO DA IMAGEM NA VITÓRIA ---
+        // Se revelarCores for true, desenha a imagem original inteira sobre
+        // a área da grade, em vez de pintar célula por célula.
+        if (revelarCores) {
+            BufferedImage imagem = tabuleiro.getImagem();
+            if (imagem != null) {
+                g2.drawImage(imagem, (int) Math.round(origemX), (int) Math.round(origemY),
+                        (int) Math.round(colunas * cellSize), (int) Math.round(linhas * cellSize), null);
+                return; // Pula o desenho normal das células
+            }
+        }
+
         double margem = Math.max(1.5, cellSize * 0.07);
 
         for (int l = 0; l < linhas; l++) {
@@ -206,18 +219,6 @@ public class PainelTabuleiro extends JPanel {
                 double y = origemY + l * cellSize;
 
                 boolean emDestaque = (l == hoverLinha || c == hoverColuna);
-
-                // --- REVELAÇÃO DA IMAGEM NA VITÓRIA ---
-                // Se revelarCores for true, pinta a cor real da imagem em TODAS as células,
-                // independente de serem marcadas ou vazias no jogo.
-                if (revelarCores) {
-                    Color corReal = tabuleiro.getCorCelula(l, c);
-                    if (corReal != null) {
-                        g2.setColor(emDestaque ? clarearLeve(corReal) : corReal);
-                        g2.fill(new Rectangle2DDouble(x, y, cellSize, cellSize));
-                        continue; // Pula para a próxima célula sem passar pelo switch normal
-                    }
-                }
 
                 // --- MODO NORMAL DE JOGO ---
                 Tabuleiro.Estado estado = tabuleiro.getEstadoCelula(l, c);
