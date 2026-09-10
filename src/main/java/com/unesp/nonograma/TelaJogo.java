@@ -18,11 +18,11 @@ public class TelaJogo extends JFrame {
     private final BancoDePuzzles banco;
     private final CalculadoraDificuldade.Nivel nivel;
 
-    // Puzzle específico usado nesta partida (null no modo aleatório) —
+    // Puzzle específico usado nesta partida (null no modo aleatório)
     // guardamos pra poder mostrar a imagem original na tela de vitória.
     private final BancoDePuzzles.PuzzleGerado puzzleAtual;
 
-    // Estado da jogada em andamento durante um arraste do mouse (estilo Picross):
+    // Estado da jogada em andamento durante um arraste do mouse
     // o "alvo" é o estado que está sendo pintado sobre as células por onde o
     // mouse passa, decidido a partir da célula onde o botão foi pressionado.
     private Tabuleiro.Estado alvoArraste = null;
@@ -154,11 +154,7 @@ public class TelaJogo extends JFrame {
         // Célula já está no estado que estamos "pintando" durante o arraste — nada a fazer.
         if (atual == alvoArraste) return;
 
-        // O mouse pode disparar vários eventos de "arrastar" em cima da
-        // MESMA célula (mesmo sem ela mudar), por isso, se essa célula já
-        // está marcada com erro pra essa mesma tentativa, não reprocessa —
-        // senão a mesma célula errada contaria vários erros de uma vez só.
-        // Células diferentes continuam contando um erro cada, normalmente.
+        // Células diferentes continuam contando um erro cada.
         if (tb.isEmErro(linha, coluna) && tb.getEstadoTentadoErro(linha, coluna) == alvoArraste) {
             return;
         }

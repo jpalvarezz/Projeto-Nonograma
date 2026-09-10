@@ -24,10 +24,7 @@ public class Tabuleiro {
     // Estado atual escolhido pelo jogador
     private Estado[][] celulas;
 
-    // Marca, por célula, se a última tentativa ali deu erro (jogada
-    // desfeita) e qual estado o jogador tentou colocar — é isso que
-    // permite desenhar o "X" de erro com o fundo certo (vazio ou já
-    // pintado) mesmo depois da jogada ter sido desfeita internamente.
+    // Marca, por célula, se a última tentativa ali deu erro 
     private boolean[][] emErro;
     private Estado[][] estadoTentadoErro;
 
@@ -87,9 +84,8 @@ public class Tabuleiro {
 
     /**
      * Gera um puzzle totalmente aleatório (ruído 50/50), como antes.
-     * Mantido por compatibilidade / testes rápidos — para puzzles "de
-     * verdade" com forma reconhecível, use carregarPuzzle(...) com uma
-     * solução vinda de BancoDePuzzles.
+     * Mantido por compatibilidade para puzzles "de
+     * verdade" com forma reconhecível.
      */
     public void gerarTabuleiroAleatorio() {
 
@@ -105,7 +101,7 @@ public class Tabuleiro {
     }
     /**
      * Carrega um puzzle a partir de uma solução pronta, sem cores reais
-     * (usado pelo modo aleatório). Equivale a carregarPuzzle(solucao, null).
+     * (usado pelo modo aleatório).
      */
     public void carregarPuzzle(Estado[][] solucao) {
         carregarPuzzle(solucao, null);
@@ -115,12 +111,11 @@ public class Tabuleiro {
      * Carrega um puzzle a partir de uma solução pronta (por exemplo, gerada
      * a partir de uma imagem via GeradorImagem + BancoDePuzzles). Calcula
      * as pistas e recalcula todos os gabaritos possíveis compatíveis com
-     * elas — o ideal é que essa solução já tenha sido validada como única
-     * antes de chegar aqui (é isso que BancoDePuzzles faz na geração).
+     * elas, o ideal é que essa solução já tenha sido validada como única
+     * antes de chegar aqui.
      *
      * @param imagem imagem original de onde a solução veio, usada para
-     *               "revelar" o desenho completo na vitória. Pode ser null
-     *               (puzzle sem imagem de origem, ex: aleatório).
+     *               "revelar" o desenho completo na vitória..
      */
     public void carregarPuzzle(Estado[][] solucao, BufferedImage imagem) {
 
@@ -148,7 +143,7 @@ public class Tabuleiro {
 
     /**
      * Devolve o gabarito já quando a lista de possibilidades convergiu pra
-     * um só (mesmo critério usado por isVitoria) — usado pela tela pra
+     * um só (mesmo critério usado por isVitoria), usado pela tela pra
      * "revelar" o desenho completo assim que o jogador vence. Retorna null
      * enquanto ainda houver mais de uma solução possível.
      */
@@ -176,7 +171,6 @@ public class Tabuleiro {
             erros++;
 
             // Guarda o que foi tentado para poder desenhar o "X" de erro
-            // com o fundo certo, mesmo desfazendo a jogada logo em seguida.
             emErro[l][c] = true;
             estadoTentadoErro[l][c] = escolhido;
 
@@ -213,21 +207,6 @@ public class Tabuleiro {
         return estadoTentadoErro[l][c];
     }
 
-    /**
-     * Vitória: não é mais necessário preencher TODAS as células (inclusive
-     * as vazias) — marcar VAZIO é só um apoio visual/lógico pro jogador,
-     * que ainda assim conta como erro se for feito no lugar errado (isso
-     * já é tratado em verificarCelula).
-     *
-     * A condição real de vitória é:
-     *  1) a lista de gabaritos possíveis já convergiu pra um só (ou seja,
-     *     não sobrou ambiguidade sobre qual é a solução — pra puzzles de
-     *     imagem isso já é verdade desde o início, já que o BancoDePuzzles
-     *     só aceita imagens com solução única; pra puzzles aleatórios pode
-     *     ser preciso marcar alguns vazios pra eliminar as outras hipóteses);
-     *  2) toda célula que é MARCADA nesse gabarito único já foi marcada
-     *     como MARCADA pelo jogador.
-     */
     public boolean isVitoria() {
 
         if (possiveisGabaritos.size() != 1) return false;

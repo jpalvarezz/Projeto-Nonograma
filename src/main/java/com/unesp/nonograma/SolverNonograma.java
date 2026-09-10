@@ -6,13 +6,9 @@ import java.util.List;
 /**
  * Motor de lógica pura de nonograma: calcula pistas a partir de uma
  * solução e enumera todas as soluções compatíveis com um conjunto de
- * pistas. Não depende de UI nem de estado de jogo — por isso pode ser
+ * pistas. Não depende de UI nem de estado de jogo, por isso pode ser
  * usado tanto pelo Tabuleiro (durante a partida) quanto pelo BancoDePuzzles
  * (na hora de validar se um puzzle gerado de imagem tem solução única).
- *
- * Esta classe é uma extração/refatoração dos métodos privados que
- * antes viviam dentro de Tabuleiro (calcularPistas, gerarPossiveisGabaritos,
- * gerarLinhasPossiveis, gerarBlocos, buscarSolucoes, colunasAindaPossiveis).
  */
 public class SolverNonograma {
 
@@ -67,12 +63,6 @@ public class SolverNonograma {
 
     /**
      * Gera todas as soluções (gabaritos) compatíveis com as pistas dadas.
-     *
-     * Atenção: é combinatório (backtracking com poda por coluna). Para
-     * tabuleiros pequenos/médios (~10x10) é rápido o suficiente para rodar
-     * na geração de puzzles; evite chamar isso repetidamente durante o
-     * jogo em si — é para isso que Tabuleiro guarda a lista e vai
-     * filtrando incrementalmente a cada jogada.
      */
     public static List<Tabuleiro.Estado[][]> gerarTodasSolucoes(
             int[][] pistasLinha, int[][] pistasColuna, int linhas, int colunas) {

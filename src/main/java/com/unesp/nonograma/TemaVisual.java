@@ -3,9 +3,7 @@ package com.unesp.nonograma;
 import java.awt.*;
 
 /**
- * Paleta de cores e fontes usada em todas as telas do jogo, num lugar só.
- * Isso evita ficar espalhando "new Color(43,43,43)" mágico em cada tela
- * e garante que tudo (menu, tabuleiro, tela de vitória) combine visualmente.
+ * Paleta de cores e fontes usada em todas as telas do jogo
  */
 public final class TemaVisual {
 
@@ -16,7 +14,7 @@ public final class TemaVisual {
     public static final Color FUNDO_PAINEL   = new Color(32, 35, 43);
     public static final Color FUNDO_MENU     = new Color(20, 22, 28);
 
-    // Destaque (accent) — usado em botões, bordas ativas, título
+    // Destaque, usado em botões, bordas ativas, título
     public static final Color ACCENT         = new Color(94, 156, 255);
     public static final Color ACCENT_ESCURO  = new Color(64, 116, 209);
     public static final Color ACCENT_CLARO   = new Color(150, 190, 255);

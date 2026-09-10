@@ -7,9 +7,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.RoundRectangle2D;
 
 /**
- * Botão com cantos arredondados e efeito de hover/pressionado, pintado
- * manualmente (em vez de usar o visual padrão do Swing, que foge do
- * resto da estética escura do jogo).
+ * Botão com cantos arredondados e efeito de pressionado.
  */
 public class JButtonEstilizado extends JButton {
 

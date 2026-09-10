@@ -5,7 +5,7 @@ import java.awt.*;
 
 /**
  * Janela de fim de jogo (vitória ou derrota), estilizada para combinar
- * com o resto do jogo — em vez do JOptionPane padrão do Swing.
+ * com o resto do jogo.
  *
  * Na vitória, o desenho original não é mais mostrado aqui como imagem à
  * parte: o próprio PainelTabuleiro já revela o resultado pintando as

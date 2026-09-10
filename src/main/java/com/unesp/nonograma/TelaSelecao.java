@@ -7,14 +7,6 @@ import java.awt.event.ActionListener;
 
 /**
  * Tela de configuração da partida.
- *
- * A dificuldade (Fácil/Médio/Difícil) só faz sentido no modo Aleatório —
- * no modo Desenho (imagens), os puzzles são um conjunto fixo e pequeno
- * (desenhados à mão em BancoDePuzzles), então não faz sentido o jogador
- * escolher nível: o jogo apenas sorteia um dos desenhos cadastrados,
- * qualquer que seja sua dificuldade real. Os rádios de dificuldade
- * aparecem desabilitados nesse modo como indicação visual de que a
- * escolha não se aplica.
  */
 public class TelaSelecao extends JFrame {
 
@@ -126,8 +118,7 @@ public class TelaSelecao extends JFrame {
         btnJogar.addActionListener(e -> iniciarJogo(rbModoAleatorio.isSelected()));
         painel.add(btnJogar);
 
-        // Mostra o aviso de sorteio apenas no modo Desenho (a dificuldade
-        // em si fica sempre habilitada, em ambos os modos)
+        // Mostra o aviso de sorteio apenas no modo Desenho
         ActionListener atualizarAvisoModo = e -> avisoImagem.setVisible(rbModoImagem.isSelected());
         rbModoAleatorio.addActionListener(atualizarAvisoModo);
         rbModoImagem.addActionListener(atualizarAvisoModo);
@@ -160,10 +151,6 @@ public class TelaSelecao extends JFrame {
 
         if (!aleatorio) {
 
-            // No modo Desenho, o puzzle em si é sorteado livremente entre
-            // todos os cadastrados — a dificuldade escolhida pelo jogador
-            // não filtra qual desenho aparece, só define o limite de erros
-            // (igual no modo Aleatório).
             try {
                 puzzleEscolhido = banco.sortear();
             } catch (IllegalStateException ex) {

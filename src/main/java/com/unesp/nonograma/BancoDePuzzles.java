@@ -6,22 +6,10 @@ import java.io.IOException;
 import java.util.*;
 
 /**
- * Banco de puzzles com soluções desenhadas à mão (matriz 10x10 fixa).
+ * Banco de puzzles com soluções desenhadas à mão.
  * Cada desenho tem um padrão MARCADA/VAZIO definido em DEFINICOES e uma
  * imagem correspondente (carregada da pasta de recursos) usada só pra
  * "revelar" ao jogador depois que ele resolve o nonograma.
- *
- * O desenho sorteado no modo Desenho é sempre escolhido livremente entre
- * todos os cadastrados — não existe nível por desenho. A dificuldade
- * (Fácil/Médio/Difícil) é escolhida pelo jogador na tela de seleção e só
- * define o limite de erros da partida (igual no modo Aleatório), não
- * influencia qual puzzle aparece.
- *
- * Uso esperado:
- *   BancoDePuzzles banco = new BancoDePuzzles(new File("src/main/resources/imagens"));
- *   BancoDePuzzles.PuzzleGerado puzzle = banco.sortear();
- *   // manda puzzle.pistasLinha / puzzle.pistasColuna pro jogador resolver
- *   // ao terminar, mostra puzzle.imagem
  */
 public class BancoDePuzzles {
 
@@ -131,10 +119,7 @@ public class BancoDePuzzles {
                     + " soluções possíveis (não é único) — revise o padrão.");
         }
 
-        // Slack médio calculado só como informação/log — não influencia
-        // mais nada no jogo (o desenho é sorteado livremente, sem filtro
-        // de nível; a dificuldade escolhida pelo jogador só define o
-        // limite de erros).
+        // Slack médio calculado só como informação/log.
         double slack = CalculadoraDificuldade.slackMedio(pistasLinha, pistasColuna, LINHAS, COLUNAS);
 
         BufferedImage imagem = carregarImagem(pastaImagens, def.arquivoImagem);

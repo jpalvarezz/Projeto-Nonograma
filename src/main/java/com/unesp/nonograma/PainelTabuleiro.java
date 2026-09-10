@@ -8,9 +8,7 @@ import java.awt.geom.RoundRectangle2D;
 import java.awt.image.BufferedImage;
 
 /**
- * Componente que desenha o tabuleiro inteiro (pistas de linha, pistas de
- * coluna e a grade de células) em tempo real, num único Graphics2D, em
- * vez de usar uma grade de JButton dentro de um GridLayout.
+ * Componente que desenha o tabuleiro inteiro.
  */
 public class PainelTabuleiro extends JPanel {
 
@@ -26,7 +24,7 @@ public class PainelTabuleiro extends JPanel {
 
     // Geometria calculada a cada paintComponent (guardada para o mouse usar a mesma conta)
     private double cellSize;
-    private double origemX, origemY;   // canto superior-esquerdo da GRADE (depois das pistas)
+    private double origemX, origemY;  
     private double larguraPistas, alturaPistas;
 
     private int hoverLinha = -1, hoverColuna = -1;
@@ -223,12 +221,7 @@ public class PainelTabuleiro extends JPanel {
                 // --- MODO NORMAL DE JOGO ---
                 Tabuleiro.Estado estado = tabuleiro.getEstadoCelula(l, c);
 
-                // Célula com erro: a jogada já foi desfeita (estado voltou pra
-                // INTOCADA), mas mostramos o "X" de erro sobre o fundo OPOSTO
-                // ao que foi tentado — já que a tentativa estava errada, o
-                // fundo mostrado é o outro: tentou MARCAR (botão esquerdo) e
-                // errou -> mostra fundo VAZIO; tentou marcar como VAZIO
-                // (botão direito) e errou -> mostra fundo PREENCHIDO.
+                // Célula com erro
                 if (tabuleiro.isEmErro(l, c)) {
                     Tabuleiro.Estado tentativa = tabuleiro.getEstadoTentadoErro(l, c);
 

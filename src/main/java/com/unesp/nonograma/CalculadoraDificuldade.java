@@ -53,10 +53,6 @@ public class CalculadoraDificuldade {
      * Classifica o nível com base no slack médio relativo ao tamanho
      * da linha/coluna (proporção, não valor absoluto — assim funciona
      * independente do tamanho do tabuleiro).
-     *
-     * Os cortes (0.20 / 0.35) são um ponto de partida razoável para um
-     * tabuleiro 10x10; se, na prática, os níveis ficarem desbalanceados
-     * (ex: quase tudo caindo em DIFICIL), ajuste esses dois números.
      */
     public static Nivel classificar(double slackMedio, int tamanhoReferencia) {
 
