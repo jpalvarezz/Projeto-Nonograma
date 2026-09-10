@@ -80,7 +80,7 @@ public class TelaSelecao extends JFrame {
 
         painel.add(Box.createVerticalStrut(34));
 
-        // ---------- DIFICULDADE (só se aplica ao modo Aleatório) ----------
+        // ---------- DIFICULDADE (aplica a ambos os modos) ----------
 
         labelDificuldade = new JLabel("DIFICULDADE");
         labelDificuldade.setAlignmentX(Component.CENTER_ALIGNMENT);
@@ -108,7 +108,7 @@ public class TelaSelecao extends JFrame {
         painelDificuldade.add(rbDificil);
         painel.add(painelDificuldade);
 
-        JLabel avisoImagem = new JLabel("No modo Desenho, um dos puzzles é sorteado", SwingConstants.CENTER);
+        JLabel avisoImagem = new JLabel("No modo Desenho, o puzzle é sorteado livremente; a dificuldade só define o limite de erros", SwingConstants.CENTER);
         avisoImagem.setAlignmentX(Component.CENTER_ALIGNMENT);
         avisoImagem.setFont(TemaVisual.fonteTexto(11));
         avisoImagem.setForeground(new Color(120, 124, 134));
@@ -126,18 +126,12 @@ public class TelaSelecao extends JFrame {
         btnJogar.addActionListener(e -> iniciarJogo(rbModoAleatorio.isSelected()));
         painel.add(btnJogar);
 
-        // Habilita/desabilita a dificuldade conforme o modo escolhido
-        ActionListener atualizarEstadoDificuldade = e -> {
-            boolean aleatorio = rbModoAleatorio.isSelected();
-            rbFacil.setEnabled(aleatorio);
-            rbMedio.setEnabled(aleatorio);
-            rbDificil.setEnabled(aleatorio);
-            labelDificuldade.setForeground(aleatorio ? TemaVisual.TEXTO_SUAVE : new Color(90, 94, 104));
-            avisoImagem.setVisible(!aleatorio);
-        };
-        rbModoAleatorio.addActionListener(atualizarEstadoDificuldade);
-        rbModoImagem.addActionListener(atualizarEstadoDificuldade);
-        atualizarEstadoDificuldade.actionPerformed(null); // aplica o estado inicial
+        // Mostra o aviso de sorteio apenas no modo Desenho (a dificuldade
+        // em si fica sempre habilitada, em ambos os modos)
+        ActionListener atualizarAvisoModo = e -> avisoImagem.setVisible(rbModoImagem.isSelected());
+        rbModoAleatorio.addActionListener(atualizarAvisoModo);
+        rbModoImagem.addActionListener(atualizarAvisoModo);
+        atualizarAvisoModo.actionPerformed(null); // aplica o estado inicial
 
         add(painel);
     }
@@ -161,18 +155,15 @@ public class TelaSelecao extends JFrame {
     private void iniciarJogo(boolean aleatorio) {
 
         BancoDePuzzles.PuzzleGerado puzzleEscolhido = null;
-        CalculadoraDificuldade.Nivel nivel;
-        int dificuldadeEscolhida;
+        int dificuldadeEscolhida = obterDificuldadeSelecionada();
+        CalculadoraDificuldade.Nivel nivel = mapearNivel(dificuldadeEscolhida);
 
-        if (aleatorio) {
+        if (!aleatorio) {
 
-            dificuldadeEscolhida = obterDificuldadeSelecionada();
-            nivel = mapearNivel(dificuldadeEscolhida);
-
-        } else {
-
-            // No modo Desenho não existe escolha de dificuldade — sorteia
-            // livremente entre todos os puzzles cadastrados em BancoDePuzzles.
+            // No modo Desenho, o puzzle em si é sorteado livremente entre
+            // todos os cadastrados — a dificuldade escolhida pelo jogador
+            // não filtra qual desenho aparece, só define o limite de erros
+            // (igual no modo Aleatório).
             try {
                 puzzleEscolhido = banco.sortear();
             } catch (IllegalStateException ex) {
@@ -182,12 +173,6 @@ public class TelaSelecao extends JFrame {
                         JOptionPane.WARNING_MESSAGE);
                 return;
             }
-
-            // O nível exibido/guardado passa a refletir a dificuldade real
-            // do puzzle sorteado (calculada a partir do próprio padrão),
-            // em vez de um valor fixo artificial.
-            nivel = puzzleEscolhido.nivel;
-            dificuldadeEscolhida = mapearDificuldade(nivel);
         }
 
         Tabuleiro tb = new Tabuleiro(aleatorio ? "Aleatório" : "Desenho", 10, 10);
@@ -212,11 +197,4 @@ public class TelaSelecao extends JFrame {
         }
     }
 
-    private int mapearDificuldade(CalculadoraDificuldade.Nivel nivel) {
-        switch (nivel) {
-            case FACIL: return 1;
-            case DIFICIL: return 3;
-            default: return 2;
-        }
-    }
 }

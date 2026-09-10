@@ -11,6 +11,12 @@ import java.util.*;
  * imagem correspondente (carregada da pasta de recursos) usada só pra
  * "revelar" ao jogador depois que ele resolve o nonograma.
  *
+ * O desenho sorteado no modo Desenho é sempre escolhido livremente entre
+ * todos os cadastrados — não existe nível por desenho. A dificuldade
+ * (Fácil/Médio/Difícil) é escolhida pelo jogador na tela de seleção e só
+ * define o limite de erros da partida (igual no modo Aleatório), não
+ * influencia qual puzzle aparece.
+ *
  * Uso esperado:
  *   BancoDePuzzles banco = new BancoDePuzzles(new File("src/main/resources/imagens"));
  *   BancoDePuzzles.PuzzleGerado puzzle = banco.sortear();
@@ -87,19 +93,16 @@ public class BancoDePuzzles {
         public final Tabuleiro.Estado[][] solucao;
         public final int[][] pistasLinha;
         public final int[][] pistasColuna;
-        public final CalculadoraDificuldade.Nivel nivel;
         public final double slackMedio;
         public final BufferedImage imagem;
 
         PuzzleGerado(String nome, Tabuleiro.Estado[][] solucao,
                      int[][] pistasLinha, int[][] pistasColuna,
-                     CalculadoraDificuldade.Nivel nivel, double slackMedio,
-                     BufferedImage imagem) {
+                     double slackMedio, BufferedImage imagem) {
             this.nome = nome;
             this.solucao = solucao;
             this.pistasLinha = pistasLinha;
             this.pistasColuna = pistasColuna;
-            this.nivel = nivel;
             this.slackMedio = slackMedio;
             this.imagem = imagem;
         }
@@ -128,14 +131,17 @@ public class BancoDePuzzles {
                     + " soluções possíveis (não é único) — revise o padrão.");
         }
 
+        // Slack médio calculado só como informação/log — não influencia
+        // mais nada no jogo (o desenho é sorteado livremente, sem filtro
+        // de nível; a dificuldade escolhida pelo jogador só define o
+        // limite de erros).
         double slack = CalculadoraDificuldade.slackMedio(pistasLinha, pistasColuna, LINHAS, COLUNAS);
-        CalculadoraDificuldade.Nivel nivel = CalculadoraDificuldade.classificar(slack, COLUNAS);
 
         BufferedImage imagem = carregarImagem(pastaImagens, def.arquivoImagem);
 
-        banco.add(new PuzzleGerado(def.nome, solucao, pistasLinha, pistasColuna, nivel, slack, imagem));
+        banco.add(new PuzzleGerado(def.nome, solucao, pistasLinha, pistasColuna, slack, imagem));
 
-        System.out.printf("%s -> nível %s (slack médio %.2f)%n", def.nome, nivel, slack);
+        System.out.printf("%s carregado (slack médio %.2f)%n", def.nome, slack);
     }
 
     private static Tabuleiro.Estado[][] converterPadrao(String[] padrao, int linhas, int colunas) {
@@ -180,31 +186,7 @@ public class BancoDePuzzles {
         return banco.get(random.nextInt(banco.size()));
     }
 
-    /** Sorteia um puzzle de um nível específico, se houver algum cadastrado nesse nível. */
-    public PuzzleGerado sortear(CalculadoraDificuldade.Nivel nivel) {
-
-        List<PuzzleGerado> doNivel = new ArrayList<>();
-        for (PuzzleGerado p : banco) {
-            if (p.nivel == nivel) doNivel.add(p);
-        }
-
-        if (doNivel.isEmpty()) {
-            throw new IllegalStateException("Nenhum puzzle disponível para o nível " + nivel
-                    + ". Cadastre mais desenhos em DEFINICOES.");
-        }
-
-        return doNivel.get(random.nextInt(doNivel.size()));
-    }
-
     public int quantidade() {
         return banco.size();
-    }
-
-    public int quantidade(CalculadoraDificuldade.Nivel nivel) {
-        int total = 0;
-        for (PuzzleGerado p : banco) {
-            if (p.nivel == nivel) total++;
-        }
-        return total;
     }
 }
