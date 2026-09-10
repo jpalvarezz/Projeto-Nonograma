@@ -3,13 +3,9 @@ package com.unesp.nonograma;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Motor de lógica pura de nonograma: calcula pistas a partir de uma
- * solução e enumera todas as soluções compatíveis com um conjunto de
- * pistas. Não depende de UI nem de estado de jogo, por isso pode ser
- * usado tanto pelo Tabuleiro (durante a partida) quanto pelo BancoDePuzzles
- * (na hora de validar se um puzzle gerado de imagem tem solução única).
- */
+ //Calcula pistas a partir de uma solução e enumera todas as soluções compatíveis com um conjunto de pistas. 
+ //Não depende de UI nem de estado de jogo, por isso pode ser
+ //usado tanto pelo Tabuleiro (durante a partida) quanto pelo BancoDePuzzles para validar se um puzzle gerado de imagem tem solução única
 public class SolverNonograma {
 
     public static int[][] calcularPistasLinha(Tabuleiro.Estado[][] solucao, int linhas, int colunas) {
@@ -61,9 +57,7 @@ public class SolverNonograma {
         return resultado;
     }
 
-    /**
-     * Gera todas as soluções (gabaritos) compatíveis com as pistas dadas.
-     */
+    //Gera todas as soluções compatíveis com as pistas
     public static List<Tabuleiro.Estado[][]> gerarTodasSolucoes(
             int[][] pistasLinha, int[][] pistasColuna, int linhas, int colunas) {
 
@@ -77,7 +71,6 @@ public class SolverNonograma {
 
         List<Tabuleiro.Estado[][]> solucoes = new ArrayList<>();
         Tabuleiro.Estado[][] tabuleiro = new Tabuleiro.Estado[linhas][colunas];
-
         buscarSolucoes(0, possibilidadesLinhas, tabuleiro, pistasColuna, linhas, colunas, solucoes);
 
         return solucoes;
