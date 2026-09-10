@@ -222,6 +222,28 @@ public class PainelTabuleiro extends JPanel {
                 // --- MODO NORMAL DE JOGO ---
                 Tabuleiro.Estado estado = tabuleiro.getEstadoCelula(l, c);
 
+                // Célula com erro: a jogada já foi desfeita (estado voltou pra
+                // INTOCADA), mas mostramos o "X" de erro sobre o fundo OPOSTO
+                // ao que foi tentado — já que a tentativa estava errada, o
+                // fundo mostrado é o outro: tentou MARCAR (botão esquerdo) e
+                // errou -> mostra fundo VAZIO; tentou marcar como VAZIO
+                // (botão direito) e errou -> mostra fundo PREENCHIDO.
+                if (tabuleiro.isEmErro(l, c)) {
+                    Tabuleiro.Estado tentativa = tabuleiro.getEstadoTentadoErro(l, c);
+
+                    if (tentativa == Tabuleiro.Estado.MARCADA) {
+                        g2.setColor(TemaVisual.CELULA_VAZIA);
+                        g2.fill(new Rectangle2DDouble(x, y, cellSize, cellSize));
+                    } else {
+                        g2.setColor(emDestaque ? TemaVisual.CELULA_MARCADA_BRILHO : TemaVisual.CELULA_MARCADA);
+                        g2.fill(new RoundRectangle2D.Double(x + margem, y + margem,
+                                cellSize - margem * 2, cellSize - margem * 2, cellSize * 0.18, cellSize * 0.18));
+                    }
+
+                    desenharX(g2, x, y, cellSize);
+                    continue;
+                }
+
                 switch (estado) {
                     case MARCADA -> {
                         g2.setColor(emDestaque ? TemaVisual.CELULA_MARCADA_BRILHO : TemaVisual.CELULA_MARCADA);
@@ -245,6 +267,17 @@ public class PainelTabuleiro extends JPanel {
                 }
             }
         }
+    }
+
+    /** Desenha o "X" vermelho de erro, centralizado na célula em (x, y). */
+    private void desenharX(Graphics2D g2, double x, double y, double tamanho) {
+        double margemX = tamanho * 0.26;
+
+        g2.setColor(TemaVisual.ERRO);
+        g2.setStroke(new BasicStroke((float) Math.max(2, tamanho * 0.11), BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+
+        g2.draw(new Line2DDouble(x + margemX, y + margemX, x + tamanho - margemX, y + tamanho - margemX));
+        g2.draw(new Line2DDouble(x + tamanho - margemX, y + margemX, x + margemX, y + tamanho - margemX));
     }
 
     private void desenharGrade(Graphics2D g2) {

@@ -24,6 +24,13 @@ public class Tabuleiro {
     // Estado atual escolhido pelo jogador
     private Estado[][] celulas;
 
+    // Marca, por célula, se a última tentativa ali deu erro (jogada
+    // desfeita) e qual estado o jogador tentou colocar — é isso que
+    // permite desenhar o "X" de erro com o fundo certo (vazio ou já
+    // pintado) mesmo depois da jogada ter sido desfeita internamente.
+    private boolean[][] emErro;
+    private Estado[][] estadoTentadoErro;
+
     // Pistas
     private int[][] pistasLinha;
     private int[][] pistasColuna;
@@ -43,6 +50,8 @@ public class Tabuleiro {
         this.colunas = colunas;
 
         this.celulas = new Estado[linhas][colunas];
+        this.emErro = new boolean[linhas][colunas];
+        this.estadoTentadoErro = new Estado[linhas][colunas];
 
         for (int l = 0; l < linhas; l++) {
             for (int c = 0; c < colunas; c++) celulas[l][c] = Estado.INTOCADA;
@@ -119,7 +128,11 @@ public class Tabuleiro {
         this.cores = cores;
 
         for (int l = 0; l < linhas; l++) {
-            for (int c = 0; c < colunas; c++) celulas[l][c] = Estado.INTOCADA;
+            for (int c = 0; c < colunas; c++) {
+                celulas[l][c] = Estado.INTOCADA;
+                emErro[l][c] = false;
+                estadoTentadoErro[l][c] = null;
+            }
         }
 
         pistasLinha = SolverNonograma.calcularPistasLinha(solucao, linhas, colunas);
@@ -162,6 +175,11 @@ public class Tabuleiro {
 
             erros++;
 
+            // Guarda o que foi tentado para poder desenhar o "X" de erro
+            // com o fundo certo, mesmo desfazendo a jogada logo em seguida.
+            emErro[l][c] = true;
+            estadoTentadoErro[l][c] = escolhido;
+
             // Desfaz a jogada
             celulas[l][c] = Estado.INTOCADA;
 
@@ -176,6 +194,23 @@ public class Tabuleiro {
     // Desmarca
     public void desmarcar(int l, int c) {
         celulas[l][c] = Estado.INTOCADA;
+        limparErro(l, c);
+    }
+
+    // Limpa o "X" de erro de uma célula (chamado sempre que o jogador tenta de novo)
+    private void limparErro(int l, int c) {
+        emErro[l][c] = false;
+        estadoTentadoErro[l][c] = null;
+    }
+
+    // A célula está marcada com o "X" de erro (última tentativa ali foi inválida)?
+    public boolean isEmErro(int l, int c) {
+        return emErro[l][c];
+    }
+
+    // Qual estado o jogador tentou colocar na última tentativa errada (MARCADA ou VAZIO)
+    public Estado getEstadoTentadoErro(int l, int c) {
+        return estadoTentadoErro[l][c];
     }
 
     /**
@@ -262,10 +297,12 @@ public class Tabuleiro {
 
     public void marcar(int l, int c) {
         celulas[l][c] = Estado.MARCADA;
+        limparErro(l, c);
     }
 
     public void vazio(int l, int c) {
         celulas[l][c] = Estado.VAZIO;
+        limparErro(l, c);
     }
 
     public boolean isGameOver() {

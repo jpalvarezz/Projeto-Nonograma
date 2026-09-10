@@ -152,8 +152,16 @@ public class TelaJogo extends JFrame {
         Tabuleiro.Estado atual = tb.getEstadoCelula(linha, coluna);
 
         // Célula já está no estado que estamos "pintando" durante o arraste — nada a fazer.
-        // Isso evita, por exemplo, reprocessar erro numa célula que passou duas vezes pelo mouse.
         if (atual == alvoArraste) return;
+
+        // O mouse pode disparar vários eventos de "arrastar" em cima da
+        // MESMA célula (mesmo sem ela mudar), por isso, se essa célula já
+        // está marcada com erro pra essa mesma tentativa, não reprocessa —
+        // senão a mesma célula errada contaria vários erros de uma vez só.
+        // Células diferentes continuam contando um erro cada, normalmente.
+        if (tb.isEmErro(linha, coluna) && tb.getEstadoTentadoErro(linha, coluna) == alvoArraste) {
+            return;
+        }
 
         if (alvoArraste == Tabuleiro.Estado.INTOCADA) {
             tb.desmarcar(linha, coluna);
